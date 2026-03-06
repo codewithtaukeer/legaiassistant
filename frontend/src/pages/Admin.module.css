@@ -1,0 +1,151 @@
+.layout { display: flex; height: 100vh; background: #0f0f0f; }
+
+.sidebar {
+  width: 240px;
+  background: #171717;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 12px;
+}
+
+.brand { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; padding: 0 8px; }
+
+.adminBadge {
+  font-size: 12px;
+  color: #10a37f;
+  background: #10a37f22;
+  border: 1px solid #10a37f44;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.nav { display: flex; flex-direction: column; gap: 4px; }
+
+.navBtn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+.navBtn:hover { background: #222; color: #fff; }
+.navBtn.active { background: #222; color: #fff; }
+
+.sidebarBottom { margin-top: auto; }
+
+.backBtn {
+  width: 100%;
+  background: none;
+  border: 1px solid #2a2a2a;
+  color: #888;
+  border-radius: 8px;
+  padding: 9px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.backBtn:hover { background: #222; color: #fff; }
+
+.main { flex: 1; overflow-y: auto; padding: 32px; }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.header h1 { font-size: 22px; font-weight: 700; color: #fff; }
+
+.msg {
+  background: #10a37f22;
+  border: 1px solid #10a37f44;
+  color: #10a37f;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.msg button { background: none; border: none; color: #10a37f; cursor: pointer; }
+
+.statsGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+
+.statCard {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.statIcon { font-size: 28px; margin-bottom: 10px; }
+.statValue { font-size: 32px; font-weight: 700; color: #10a37f; margin-bottom: 6px; }
+.statLabel { font-size: 13px; color: #888; }
+
+.tableWrapper { overflow-x: auto; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  background: #1a1a1a;
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #2a2a2a;
+}
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #1a1a1a;
+  color: #ccc;
+}
+.table tr:hover td { background: #1a1a1a; }
+
+.deleteBtn {
+  background: #ff444422;
+  border: 1px solid #ff444444;
+  color: #ff4444;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.deleteBtn:hover { background: #ff444433; }
+
+.pdfActions { margin-bottom: 16px; }
+
+.clearBtn {
+  background: #ff444422;
+  border: 1px solid #ff444444;
+  color: #ff4444;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.clearBtn:hover { background: #ff444433; }
+
+.empty { color: #555; font-size: 14px; text-align: center; padding: 40px; }
+
+.pdfList { display: flex; flex-direction: column; gap: 10px; }
+
+.pdfCard {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pdfName { font-size: 14px; color: #fff; margin-bottom: 4px; }
+.pdfDate { font-size: 12px; color: #555; }

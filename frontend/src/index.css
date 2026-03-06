@@ -1,68 +1,57 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root[data-theme="dark"] {
+  --bg: #0f0f0f;
+  --bg2: #171717;
+  --bg3: #1a1a1a;
+  --bg4: #222;
+  --border: #2a2a2a;
+  --text: #ececec;
+  --text2: #aaa;
+  --text3: #666;
+  --accent: #10a37f;
+  --accent-hover: #0d8f6f;
+  --accent-dim: #10a37f22;
+  --accent-border: #10a37f44;
+  --user-bubble: #10a37f18;
+  --user-border: #10a37f33;
+  --danger: #ff4444;
+  --danger-dim: #ff444422;
+  --danger-border: #ff444444;
+  --shadow: rgba(0,0,0,0.4);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+:root[data-theme="light"] {
+  --bg: #f5f5f5;
+  --bg2: #ffffff;
+  --bg3: #f0f0f0;
+  --bg4: #e8e8e8;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --text2: #555;
+  --text3: #999;
+  --accent: #10a37f;
+  --accent-hover: #0d8f6f;
+  --accent-dim: #10a37f15;
+  --accent-border: #10a37f33;
+  --user-bubble: #10a37f15;
+  --user-border: #10a37f33;
+  --danger: #e53e3e;
+  --danger-dim: #e53e3e15;
+  --danger-border: #e53e3e33;
+  --shadow: rgba(0,0,0,0.1);
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  
+  transition: background 0.3s, color 0.3s;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }

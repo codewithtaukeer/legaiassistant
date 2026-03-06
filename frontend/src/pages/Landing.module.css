@@ -1,0 +1,126 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.brand { font-size: 20px; font-weight: 700; color: var(--text); }
+
+.topRight { display: flex; align-items: center; gap: 12px; }
+
+.loginBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.loginBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+.registerBtn {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.registerBtn:hover { background: var(--accent-hover); }
+
+.hero {
+  text-align: center;
+  padding: 80px 40px 60px;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 20px;
+}
+
+.accent { color: var(--accent); }
+
+.subtitle {
+  font-size: 18px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 36px;
+}
+
+.actions { display: flex; gap: 14px; justify-content: center; }
+
+.ctaPrimary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px var(--accent-dim);
+}
+.ctaPrimary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+.ctaSecondary {
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ctaSecondary:hover { background: var(--bg4); }
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  padding: 0 40px 60px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.featureCard {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  transition: all 0.2s;
+}
+.featureCard:hover { border-color: var(--accent-border); transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow); }
+
+.featureIcon { font-size: 28px; margin-bottom: 12px; }
+.featureCard h3 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.featureCard p { font-size: 13px; color: var(--text2); line-height: 1.5; }

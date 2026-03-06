@@ -12,7 +12,7 @@ from rag.pdf_vector_store import build_pdf_index, search_pdf, clear_pdf_index, l
 
 from backend.database import get_db
 from backend.auth import get_current_user
-from backend.routers import auth_router, chat_router
+from backend.routers import auth_router, chat_router, admin_router
 from backend.routers.chat_router import save_message
 
 import os
@@ -20,10 +20,10 @@ import uuid
 
 app = FastAPI(title="Legal AI Assistant")
 
-# CORS - allow your frontend origin
+# CORS - allow your frontend origin 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "*"],
+    allow_origins=["http://localhost:3000", "http://localhost:5174", "http://localhost:5173", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,7 +32,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router.router)
 app.include_router(chat_router.router)
-
+app.include_router(admin_router.router)
 
 @app.get("/")
 def home():
@@ -110,13 +110,15 @@ def ask_question(
             "relevance_score": r.get("relevance_score", 0.0)
         })
 
-    citations = [c for c in citations if c["relevance_score"] > 0.3]
+    citations = [c for c in citations if c["relevance_score"] > 0.1]
     citations.sort(key=lambda x: x["relevance_score"], reverse=True)
 
     # Save to DB
     if session_id:
         save_message(db, session_id, "user", question)
         save_message(db, session_id, "assistant", final_answer, result["relevant_laws"], citations)
+    
+    
 
     return {
         "session_id": session_id,

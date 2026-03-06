@@ -1,1 +1,1 @@
-from . import auth_router, chat_router
+from . import auth_router, chat_router, admin_router

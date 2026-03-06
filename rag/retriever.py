@@ -23,6 +23,23 @@ index.add(np.array(normalized))
 
 
 def search_legal_sections(query, top_k=3):
+    # Check if query contains a section number
+    import re
+    section_match = re.search(r'\b(\d+)\b', query)
+    if section_match:
+        section_num = int(section_match.group(1))
+        # Direct section number match
+        direct = data[data['section'] == section_num]
+        if not direct.empty:
+            row = direct.iloc[0]
+            direct_result = [{
+                "act": str(row["act"]),
+                "section": int(row["section"]),
+                "title": str(row["title"]),
+                "text": str(row["text"]),
+                "relevance_score": 1.0  # exact match
+            }]
+            return direct_result
 
     # Semantic search
     query_embedding = model.encode([query])
@@ -33,10 +50,11 @@ def search_legal_sections(query, top_k=3):
     # Keyword search
     tokenized_query = query.split(" ")
     bm25_scores = bm25.get_scores(tokenized_query)
+    max_bm25 = max(bm25_scores) if max(bm25_scores) > 0 else 1
+    bm25_normalized = bm25_scores / max_bm25
     keyword_indices = np.argsort(bm25_scores)[::-1][:top_k]
-    keyword_results = {int(i): float(bm25_scores[i]) for i in keyword_indices}
+    keyword_results = {int(i): float(bm25_normalized[i]) for i in keyword_indices}
 
-    # Combine — semantic score takes priority
     combined = {}
     for i, score in semantic_results.items():
         combined[i] = {"semantic_score": score, "keyword_score": keyword_results.get(i, 0.0)}
@@ -55,6 +73,5 @@ def search_legal_sections(query, top_k=3):
             "relevance_score": relevance
         })
 
-    # Sort by relevance
     results.sort(key=lambda x: x["relevance_score"], reverse=True)
     return results
