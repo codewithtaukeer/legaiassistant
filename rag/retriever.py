@@ -67,7 +67,7 @@ def search_legal_sections(query, top_k=3):
         relevance = round((scores["semantic_score"] * 0.7) + (scores["keyword_score"] * 0.3), 4)
         results.append({
             "act": str(data.iloc[i]["act"]),
-            "section": int(data.iloc[i]["section"]),
+            "section": str(data.iloc[i]["section"]),
             "title": str(data.iloc[i]["title"]),
             "text": str(data.iloc[i]["text"]),
             "relevance_score": relevance
