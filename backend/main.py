@@ -1,4 +1,7 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+
 from rag.retriever import search_legal_sections
 from rag.generator import generate_answer
 from rag.translator import translate_to_english, translate_from_english
@@ -6,12 +9,29 @@ from rag.language_detector import detect_language
 from rag.pdf_loader import load_pdf_text, load_pdf_with_pages
 from rag.text_chunker import chunk_text
 from rag.pdf_vector_store import build_pdf_index, search_pdf, clear_pdf_index, list_uploaded_pdfs
-from rag.conversation_store import create_session, add_message, get_history, delete_session
+
+from backend.database import get_db
+from backend.auth import get_current_user
+from backend.routers import auth_router, chat_router
+from backend.routers.chat_router import save_message
 
 import os
 import uuid
 
-app = FastAPI()
+app = FastAPI(title="Legal AI Assistant")
+
+# CORS - allow your frontend origin
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(auth_router.router)
+app.include_router(chat_router.router)
 
 
 @app.get("/")
@@ -19,14 +39,23 @@ def home():
     return {"message": "Legal AI system is running"}
 
 
-@app.post("/session/new")
-def new_session():
-    session_id = create_session()
-    return {"session_id": session_id}
-
-
 @app.get("/ask")
-def ask_question(question: str, session_id: str = None):
+def ask_question(
+    question: str,
+    session_id: str = None,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    from backend.database import ChatSession
+    
+    # Verify session belongs to user
+    if session_id:
+        session = db.query(ChatSession).filter(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id
+        ).first()
+        if not session:
+            session_id = None
 
     user_language = detect_language(question)
     english_question = translate_to_english(question)
@@ -34,7 +63,6 @@ def ask_question(question: str, session_id: str = None):
     pdf_results = search_pdf(english_question)
     sections = search_legal_sections(english_question)
 
-    # Build PDF context with citation info
     pdf_context = [
         {
             "act": f"PDF: {r['filename']}",
@@ -47,7 +75,15 @@ def ask_question(question: str, session_id: str = None):
 
     context = sections + pdf_context
 
-    history = get_history(session_id) if session_id else []
+    # Get history from DB
+    history = []
+    if session_id:
+        from backend.database import Message
+        messages = db.query(Message).filter(
+            Message.session_id == session_id
+        ).order_by(Message.created_at).all()
+        for m in messages[-8:]:
+            history.append({"question": m.content, "answer": ""} if m.role == "user" else {"question": "", "answer": m.content})
 
     result = generate_answer(english_question, context, history)
 
@@ -55,12 +91,8 @@ def ask_question(question: str, session_id: str = None):
     if user_language != "en":
         final_answer = translate_from_english(final_answer, user_language)
 
-    if session_id:
-        add_message(session_id, question, final_answer)
-
-    # Build full citations
+    # Build citations
     citations = []
-
     for s in sections:
         citations.append({
             "type": "law",
@@ -69,7 +101,6 @@ def ask_question(question: str, session_id: str = None):
             "passage": s["text"],
             "relevance_score": s.get("relevance_score", 0.0)
         })
-
     for r in pdf_results:
         citations.append({
             "type": "pdf",
@@ -79,10 +110,13 @@ def ask_question(question: str, session_id: str = None):
             "relevance_score": r.get("relevance_score", 0.0)
         })
 
-    # Sort citations by relevance
-    # Filter low relevance citations before returning
     citations = [c for c in citations if c["relevance_score"] > 0.3]
     citations.sort(key=lambda x: x["relevance_score"], reverse=True)
+
+    # Save to DB
+    if session_id:
+        save_message(db, session_id, "user", question)
+        save_message(db, session_id, "assistant", final_answer, result["relevant_laws"], citations)
 
     return {
         "session_id": session_id,
@@ -94,48 +128,35 @@ def ask_question(question: str, session_id: str = None):
     }
 
 
-@app.get("/session/{session_id}/history")
-def session_history(session_id: str):
-    history = get_history(session_id)
-    return {"session_id": session_id, "history": history}
-
-
-@app.delete("/session/{session_id}")
-def end_session(session_id: str):
-    delete_session(session_id)
-    return {"message": "Session deleted"}
-
-
-@app.get("/pdfs")
-def get_uploaded_pdfs():
-    return {"uploaded_pdfs": list_uploaded_pdfs()}
-
-
 @app.post("/upload_pdf")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user)  # requires auth
+):
     os.makedirs("uploads", exist_ok=True)
     file_path = f"uploads/{uuid.uuid4()}.pdf"
     contents = await file.read()
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    # Load with page numbers
     pages = load_pdf_with_pages(file_path)
-
     all_chunks = []
     all_pages = []
-
     for page_num, page_text in pages:
         chunks = chunk_text(page_text)
         all_chunks.extend(chunks)
         all_pages.extend([page_num] * len(chunks))
 
     build_pdf_index(all_chunks, filename=file.filename, page_numbers=all_pages)
-
     return {"message": f"{file.filename} uploaded and indexed successfully"}
 
 
+@app.get("/pdfs")
+def get_uploaded_pdfs(current_user=Depends(get_current_user)):
+    return {"uploaded_pdfs": list_uploaded_pdfs()}
+
+
 @app.delete("/clear_pdfs")
-def clear_pdfs():
+def clear_pdfs(current_user=Depends(get_current_user)):
     clear_pdf_index()
     return {"message": "PDF index cleared"}
