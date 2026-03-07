@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from concurrent.futures import ThreadPoolExecutor
 
 from rag.retriever import search_legal_sections
 from rag.generator import generate_answer
@@ -59,16 +60,21 @@ def ask_question(
             session_id = None
 
     user_language = detect_language(question)
-    english_question = translate_to_english(question)
+    english_question = translate_to_english(question) if user_language not in ("en", "hinglish") else question
 
-    pdf_results = search_pdf(english_question)
-    sections = search_legal_sections(english_question)
+    is_procedure = is_procedure_query(english_question)
 
-    procedures = []
-    if is_procedure_query(english_question):
-        procedures = search_procedures(english_question, top_k=5)
+    # Run all searches in parallel
+    with ThreadPoolExecutor() as executor:
+        future_pdf      = executor.submit(search_pdf, english_question)
+        future_sections = executor.submit(search_legal_sections, english_question)
+        future_procedures = executor.submit(search_procedures, english_question, 5) if is_procedure else None
+        future_cases    = executor.submit(search_case_laws, english_question, 3) if not is_procedure else None
 
-    case_laws = search_case_laws(english_question, top_k=3)
+        pdf_results = future_pdf.result()
+        sections    = future_sections.result()
+        procedures  = future_procedures.result() if future_procedures else []
+        case_laws   = future_cases.result() if future_cases else []
 
     pdf_context = [
         {
@@ -94,7 +100,7 @@ def ask_question(
     result = generate_answer(english_question, context, history, procedures, user_language, case_laws)
 
     final_answer = result["answer"]
-    if user_language != "en":
+    if user_language not in ("en", "hinglish"):
         final_answer = translate_from_english(final_answer, user_language)
 
     citations = []
@@ -123,8 +129,8 @@ def ask_question(
                 "passage": f"Documents: {p['documents_required']} | Fees: {p['fees']} | Time: {p['time']}",
                 "relevance_score": p["relevance_score"]
             })
-    for c in case_laws:
-        if c["relevance_score"] > 0.3:
+    for c in case_laws: 
+        if c["relevance_score"] > 0.6:
             citations.append({
                 "type": "case",
                 "source": c["case_name"],
@@ -133,7 +139,7 @@ def ask_question(
                 "relevance_score": c["relevance_score"]
             })
 
-    citations = [c for c in citations if c["relevance_score"] > 0.1]
+    citations = [c for c in citations if c["relevance_score"] > 0.3]
     citations.sort(key=lambda x: x["relevance_score"], reverse=True)
 
     if session_id:
@@ -203,4 +209,4 @@ def get_uploaded_pdfs(current_user=Depends(get_current_user)):
 @app.delete("/clear_pdfs")
 def clear_pdfs(current_user=Depends(get_current_user)):
     clear_pdf_index()
-    return {"message": "PDF index cleared"}
+    return {"message": "PDF index cleared"} 

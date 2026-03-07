@@ -99,13 +99,9 @@ QUESTION:
 Instructions:
 1. If the answer is in the LEGAL CONTEXT or PROCEDURE INFORMATION, use it as your primary source and elaborate clearly.
 2. Keep your "answer" field focused on the direct legal answer only — do NOT include case references in the answer field.
-3. In the "case_analysis" field, for EACH relevant landmark case write a complete structured entry like this:
-   **Case Name (Year) - Court Name**
-   Facts: Brief facts of the case.
-   Decision: What the court decided.
-   Significance: Why this case matters and how it applies to the question.
-   ---
-   Write the FULL entry for each case. Do not summarize or cut short.
+3. In the "case_analysis" field, ONLY include cases that are DIRECTLY relevant to the question. 
+   If none of the provided cases are genuinely relevant, return an empty string for case_analysis.
+   Do NOT include cases just because they mention the same section number — they must be topically relevant.
 4. For government procedures, provide step-by-step guidance with exact documents required, fees and timeframes.
 5. If the question is about Indian law but NOT in the context, answer ONLY if highly confident and add: "⚠️ This is based on general legal knowledge, not your uploaded documents."
 6. NEVER guess specific section numbers or punishments you are not sure about.
