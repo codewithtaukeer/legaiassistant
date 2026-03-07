@@ -180,7 +180,7 @@ export default function Admin() {
               <div className={styles.pdfList}>
                 {pdfs.map((p, i) => (
                   <div key={i} className={styles.pdfCard}>
-                    <div className={styles.pdfInfo}>
+                    <div className={styles.pdfInfo}> 
                       <div className={styles.pdfName}>📄 {p.filename}</div>
                       <div className={styles.pdfDate}>Uploaded: {new Date(p.upload_time).toLocaleString()}</div>
                     </div>

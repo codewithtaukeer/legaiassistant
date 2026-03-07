@@ -374,3 +374,32 @@
 .citationPassage { font-size: 12px; color: var(--text2); line-height: 1.5; border-left: 2px solid var(--accent-border); padding-left: 8px; margin-bottom: 6px; }
 
 .citationScore { font-size: 11px; color: var(--text3); }
+
+
+.micBtn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.micBtn:hover:not(:disabled) { background: var(--bg4); border-color: var(--accent-border); }
+.micBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.micActive {
+  background: var(--danger-dim) !important;
+  border-color: var(--danger-border) !important;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}

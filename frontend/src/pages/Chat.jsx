@@ -17,6 +17,7 @@ export default function Chat() {
   const [uploadFile, setUploadFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadMsg, setUploadMsg] = useState('')
+  const [listening, setListening] = useState(false)
   const messagesEndRef = useRef(null)
   const navigate = useNavigate()
   const username = localStorage.getItem('username')
@@ -133,6 +134,30 @@ export default function Chat() {
     }
   }
 
+  const startVoice = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in your browser. Please use Chrome.')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-IN'
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+
+    recognition.onstart = () => setListening(true)
+    recognition.onend = () => setListening(false)
+    recognition.onerror = () => setListening(false)
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      setInput(prev => prev + transcript)
+    }
+
+    recognition.start()
+  }
+
   const logout = () => {
     localStorage.clear()
     navigate('/login')
@@ -145,10 +170,9 @@ export default function Chat() {
         <div className={styles.sidebarTop}>
           <div className={styles.brand}>⚖️ Legal AI</div>
           <div className={styles.sidebarControls}>
-  <button className={styles.newChat} onClick={newChat} style={{flex: 1, marginRight: '8px'}}>+ New Chat</button>
-  <ThemeToggle />
-</div>
-          
+            <button className={styles.newChat} onClick={newChat} style={{flex: 1, marginRight: '8px'}}>+ New Chat</button>
+            <ThemeToggle />
+          </div>
         </div>
 
         <div className={styles.sessionList}>
@@ -193,11 +217,10 @@ export default function Chat() {
             </div>
           )}
           {username === 'admin' && (
-  <button className={styles.uploadBtn} onClick={() => navigate('/admin')} style={{marginBottom: '8px'}}>
-    🛡️ Admin Panel
-  </button>
-)}
-
+            <button className={styles.uploadBtn} onClick={() => navigate('/admin')} style={{marginBottom: '8px'}}>
+              🛡️ Admin Panel
+            </button>
+          )}
           <div className={styles.userInfo}>
             <span>👤 {username}</span>
             <button className={styles.logoutBtn} onClick={logout}>Logout</button>
@@ -269,6 +292,15 @@ export default function Chat() {
               rows={1}
             />
             <button
+              className={`${styles.micBtn} ${listening ? styles.micActive : ''}`}
+              onClick={startVoice}
+              disabled={loading}
+              title={listening ? 'Listening...' : 'Voice input'}
+              type="button"
+            >
+              {listening ? '🔴' : '🎤'}
+            </button>
+            <button
               className={styles.sendBtn}
               onClick={sendMessage}
               disabled={loading || !input.trim()}
@@ -292,7 +324,7 @@ export default function Chat() {
             {citations.map((c, i) => (
               <div key={i} className={styles.citationCard}>
                 <div className={styles.citationSource}>
-                  {c.type === 'law' ? '⚖️' : '📄'} {c.source}
+                  {c.type === 'law' ? '⚖️' : c.type === 'procedure' ? '🏛️' : '📄'} {c.source}
                   {c.page && <span className={styles.page}>Page {c.page}</span>}
                 </div>
                 {c.title && <div className={styles.citationTitle}>{c.title}</div>}

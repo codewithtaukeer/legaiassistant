@@ -9,6 +9,7 @@ from rag.language_detector import detect_language
 from rag.pdf_loader import load_pdf_text, load_pdf_with_pages
 from rag.text_chunker import chunk_text
 from rag.pdf_vector_store import build_pdf_index, search_pdf, clear_pdf_index, list_uploaded_pdfs
+from rag.procedure_retriever import search_procedures, is_procedure_query
 
 from backend.database import get_db
 from backend.auth import get_current_user
@@ -20,7 +21,6 @@ import uuid
 
 app = FastAPI(title="Legal AI Assistant")
 
-# CORS - allow your frontend origin 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:5174", "http://localhost:5173", "*"],
@@ -29,7 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(auth_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_router.router)
@@ -47,8 +46,7 @@ def ask_question(
     current_user=Depends(get_current_user)
 ):
     from backend.database import ChatSession
-    
-    # Verify session belongs to user
+
     if session_id:
         session = db.query(ChatSession).filter(
             ChatSession.id == session_id,
@@ -62,6 +60,11 @@ def ask_question(
 
     pdf_results = search_pdf(english_question)
     sections = search_legal_sections(english_question)
+
+    # Procedure search
+    procedures = []
+    if is_procedure_query(english_question):
+        procedures = search_procedures(english_question, top_k=5)
 
     pdf_context = [
         {
@@ -85,7 +88,7 @@ def ask_question(
         for m in messages[-8:]:
             history.append({"question": m.content, "answer": ""} if m.role == "user" else {"question": "", "answer": m.content})
 
-    result = generate_answer(english_question, context, history)
+    result = generate_answer(english_question, context, history, procedures, user_language)
 
     final_answer = result["answer"]
     if user_language != "en":
@@ -109,16 +112,22 @@ def ask_question(
             "passage": r["text"][:300] + "..." if len(r["text"]) > 300 else r["text"],
             "relevance_score": r.get("relevance_score", 0.0)
         })
+    for p in procedures:
+        if p["relevance_score"] > 0.2:
+            citations.append({
+                "type": "procedure",
+                "source": p["process"],
+                "title": p["step"],
+                "passage": f"Documents: {p['documents_required']} | Fees: {p['fees']} | Time: {p['time']}",
+                "relevance_score": p["relevance_score"]
+            })
 
     citations = [c for c in citations if c["relevance_score"] > 0.1]
     citations.sort(key=lambda x: x["relevance_score"], reverse=True)
 
-    # Save to DB
     if session_id:
         save_message(db, session_id, "user", question)
         save_message(db, session_id, "assistant", final_answer, result["relevant_laws"], citations)
-    
-    
 
     return {
         "session_id": session_id,
@@ -133,7 +142,7 @@ def ask_question(
 @app.post("/upload_pdf")
 async def upload_pdf(
     file: UploadFile = File(...),
-    current_user=Depends(get_current_user)  # requires auth
+    current_user=Depends(get_current_user)
 ):
     os.makedirs("uploads", exist_ok=True)
     file_path = f"uploads/{uuid.uuid4()}.pdf"
