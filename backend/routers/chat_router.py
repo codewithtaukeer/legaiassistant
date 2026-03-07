@@ -5,6 +5,8 @@ from backend.auth import get_current_user
 import uuid
 import json
 from datetime import datetime
+from backend.database import Feedback
+
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -106,3 +108,31 @@ def save_message(db, session_id, role, content, relevant_laws=[], citations=[]):
             session.updated_at = datetime.utcnow()
 
     db.commit()
+
+
+@router.post("/feedback")
+def submit_feedback(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    feedback = Feedback(
+        message_id=payload.get("message_id"),
+        session_id=payload.get("session_id"),
+        question=payload.get("question"),
+        answer=payload.get("answer"),
+        rating=payload.get("rating"),
+        comment=payload.get("comment")
+    )
+    db.add(feedback)
+    db.commit()
+    return {"message": "Feedback saved"}
+
+
+@router.get("/feedback/good")
+def get_good_answers(db: Session = Depends(get_db)):
+    """Returns top rated Q&A pairs to use as examples in prompts"""
+    good = db.query(Feedback).filter(
+        Feedback.rating == "up"
+    ).order_by(Feedback.created_at.desc()).limit(10).all()
+    return {"examples": [{"question": f.question, "answer": f.answer} for f in good]}

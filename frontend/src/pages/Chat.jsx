@@ -98,9 +98,11 @@ export default function Chat() {
       const assistantMsg = {
         role: 'assistant',
         content: res.data.answer,
+        case_analysis: res.data.case_analysis || '',
         citations: res.data.citations,
         relevant_laws: res.data.relevant_laws,
-        summary: res.data.summary
+        summary: res.data.summary,
+        related_questions: res.data.related_questions || []
       }
       setMessages(prev => [...prev, assistantMsg])
       if (res.data.citations?.length > 0) {
@@ -140,22 +142,30 @@ export default function Chat() {
       alert('Voice input is not supported in your browser. Please use Chrome.')
       return
     }
-
     const recognition = new SpeechRecognition()
     recognition.lang = 'en-IN'
     recognition.interimResults = false
     recognition.maxAlternatives = 1
-
     recognition.onstart = () => setListening(true)
     recognition.onend = () => setListening(false)
     recognition.onerror = () => setListening(false)
-
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript
       setInput(prev => prev + transcript)
     }
-
     recognition.start()
+  }
+
+  const handleFeedback = async (msgIndex, feedback) => {
+    setMessages(prev => prev.map((m, i) =>
+      i === msgIndex ? { ...m, feedback } : m
+    ))
+    try {
+      await api.post('/feedback', {
+        message_id: `${activeSession}-${msgIndex}`,
+        feedback
+      })
+    } catch {}
   }
 
   const logout = () => {
@@ -248,15 +258,52 @@ export default function Chat() {
                 <div className={styles.avatar}>
                   {msg.role === 'user' ? '👤' : '⚖️'}
                 </div>
-                <div className={styles.bubble}>
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  {msg.role === 'assistant' && msg.citations?.length > 0 && (
-                    <button
-                      className={styles.citationBtn}
-                      onClick={() => { setCitations(msg.citations); setShowCitations(true) }}
-                    >
-                      📚 {msg.citations.length} source{msg.citations.length > 1 ? 's' : ''}
-                    </button>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '100%'}}>
+
+                  {/* Main answer bubble */}
+                  <div className={styles.bubble}>
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.role === 'assistant' && (
+                      <div className={styles.feedbackRow}>
+                        <button
+                          className={`${styles.feedbackBtn} ${msg.feedback === 'up' ? styles.feedbackActive : ''}`}
+                          onClick={() => handleFeedback(i, 'up')}
+                          title="Helpful"
+                        >👍</button>
+                        <button
+                          className={`${styles.feedbackBtn} ${msg.feedback === 'down' ? styles.feedbackActive : ''}`}
+                          onClick={() => handleFeedback(i, 'down')}
+                          title="Not helpful"
+                        >👎</button>
+                        {msg.citations?.length > 0 && (
+                          <button
+                            className={styles.citationBtn}
+                            onClick={() => { setCitations(msg.citations); setShowCitations(true) }}
+                          >
+                            📚 {msg.citations.length} source{msg.citations.length > 1 ? 's' : ''}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Case Analysis - separate block below answer */}
+                  {msg.role === 'assistant' && msg.case_analysis && (
+                    <div className={styles.caseAnalysis}>
+                      <div className={styles.caseAnalysisHeader}>📋 Supporting Case Laws</div>
+                      <ReactMarkdown>{msg.case_analysis}</ReactMarkdown>
+                    </div>
+                  )}
+
+                  {/* Related questions */}
+                  {msg.role === 'assistant' && msg.related_questions?.length > 0 && (
+                    <div className={styles.relatedQuestions}>
+                      {msg.related_questions.map((q, qi) => (
+                        <button key={qi} className={styles.relatedBtn} onClick={() => setInput(q)}>
+                          💬 {q}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -324,7 +371,7 @@ export default function Chat() {
             {citations.map((c, i) => (
               <div key={i} className={styles.citationCard}>
                 <div className={styles.citationSource}>
-                  {c.type === 'law' ? '⚖️' : c.type === 'procedure' ? '🏛️' : '📄'} {c.source}
+                  {c.type === 'law' ? '⚖️' : c.type === 'procedure' ? '🏛️' : c.type === 'case' ? '📋' : '📄'} {c.source}
                   {c.page && <span className={styles.page}>Page {c.page}</span>}
                 </div>
                 {c.title && <div className={styles.citationTitle}>{c.title}</div>}
@@ -339,4 +386,4 @@ export default function Chat() {
       )}
     </div>
   )
-}
+} 

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from rag.retriever import search_legal_sections
 from rag.generator import generate_answer
@@ -10,6 +11,7 @@ from rag.pdf_loader import load_pdf_text, load_pdf_with_pages
 from rag.text_chunker import chunk_text
 from rag.pdf_vector_store import build_pdf_index, search_pdf, clear_pdf_index, list_uploaded_pdfs
 from rag.procedure_retriever import search_procedures, is_procedure_query
+from rag.case_retriever import search_case_laws
 
 from backend.database import get_db
 from backend.auth import get_current_user
@@ -32,6 +34,7 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_router.router)
+
 
 @app.get("/")
 def home():
@@ -61,10 +64,11 @@ def ask_question(
     pdf_results = search_pdf(english_question)
     sections = search_legal_sections(english_question)
 
-    # Procedure search
     procedures = []
     if is_procedure_query(english_question):
         procedures = search_procedures(english_question, top_k=5)
+
+    case_laws = search_case_laws(english_question, top_k=3)
 
     pdf_context = [
         {
@@ -78,7 +82,6 @@ def ask_question(
 
     context = sections + pdf_context
 
-    # Get history from DB
     history = []
     if session_id:
         from backend.database import Message
@@ -88,13 +91,12 @@ def ask_question(
         for m in messages[-8:]:
             history.append({"question": m.content, "answer": ""} if m.role == "user" else {"question": "", "answer": m.content})
 
-    result = generate_answer(english_question, context, history, procedures, user_language)
+    result = generate_answer(english_question, context, history, procedures, user_language, case_laws)
 
     final_answer = result["answer"]
     if user_language != "en":
         final_answer = translate_from_english(final_answer, user_language)
 
-    # Build citations
     citations = []
     for s in sections:
         citations.append({
@@ -121,6 +123,15 @@ def ask_question(
                 "passage": f"Documents: {p['documents_required']} | Fees: {p['fees']} | Time: {p['time']}",
                 "relevance_score": p["relevance_score"]
             })
+    for c in case_laws:
+        if c["relevance_score"] > 0.3:
+            citations.append({
+                "type": "case",
+                "source": c["case_name"],
+                "title": f"{c['court']} • {c['year']}",
+                "passage": c["significance"],
+                "relevance_score": c["relevance_score"]
+            })
 
     citations = [c for c in citations if c["relevance_score"] > 0.1]
     citations.sort(key=lambda x: x["relevance_score"], reverse=True)
@@ -133,10 +144,32 @@ def ask_question(
         "session_id": session_id,
         "question": question,
         "answer": final_answer,
+        "case_analysis": result.get("case_analysis", ""),
         "relevant_laws": result["relevant_laws"],
         "summary": result["summary"],
-        "citations": citations
+        "citations": citations,
+        "related_questions": result.get("related_questions", [])
     }
+
+
+class FeedbackRequest(BaseModel):
+    message_id: str
+    feedback: str
+
+
+feedback_store = {}
+
+
+@app.post("/feedback")
+def submit_feedback(
+    body: FeedbackRequest,
+    current_user=Depends(get_current_user)
+):
+    feedback_store[body.message_id] = {
+        "user_id": current_user.id,
+        "feedback": body.feedback
+    }
+    return {"message": "Feedback recorded, thank you!"}
 
 
 @app.post("/upload_pdf")

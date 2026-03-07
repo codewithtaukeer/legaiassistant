@@ -19,7 +19,7 @@ function AdminRoute({ children }) {
 }
 
 export default function App() {
-  return (
+  return ( 
     <Routes>
       <Route path="/landing" element={<Landing />} />
       <Route path="/login" element={<Login />} />
