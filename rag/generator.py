@@ -3,6 +3,27 @@ import json
 import re
 
 
+def fix_json(text):
+    result = []
+    in_string = False
+    escape_next = False
+    for char in text:
+        if escape_next:
+            result.append(char)
+            escape_next = False
+        elif char == '\\':
+            result.append(char)
+            escape_next = True
+        elif char == '"':
+            in_string = not in_string
+            result.append(char)
+        elif char == '\n' and in_string:
+            result.append('\\n')
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
 def generate_answer(question, sections, history=[], procedures=[], user_language="en", case_laws=[]):
 
     context_parts = []
@@ -113,10 +134,12 @@ Return ONLY this JSON:
 
     match = re.search(r'\{.*\}', content, re.DOTALL)
     if match:
-        content = match.group() 
+        content = match.group()
     else:
         if not content.endswith("}"):
             content += "}"
+
+    content = fix_json(content)
 
     try:
         parsed = json.loads(content)
@@ -131,11 +154,12 @@ Return ONLY this JSON:
         answer_match = re.search(r'"answer"\s*:\s*"(.*?)"', content, re.DOTALL)
         laws_match = re.search(r'"relevant_laws"\s*:\s*\[(.*?)\]', content, re.DOTALL)
         summary_match = re.search(r'"summary"\s*:\s*"(.*?)"', content, re.DOTALL)
+        case_match = re.search(r'"case_analysis"\s*:\s*"(.*?)"(?=\s*,\s*"relevant_laws")', content, re.DOTALL)
 
         return {
             "answer": answer_match.group(1) if answer_match else content,
-            "case_analysis": "",
+            "case_analysis": case_match.group(1).replace('\\n', '\n') if case_match else "",
             "relevant_laws": laws_match.group(1).split(",") if laws_match else [],
             "summary": summary_match.group(1) if summary_match else "",
             "related_questions": []
-        } 
+        }
