@@ -119,13 +119,16 @@ Return ONLY this JSON:
 }}
 """
 
+    # CORRECT - num_gpu goes INSIDE the options dict
     response = ollama.chat(
         model="mistral",
         messages=[{"role": "user", "content": prompt}],
-        options={"num_predict": 2048}
+        options={
+            "num_predict": 2048
+        }
     )
 
-    content = response.message.content
+    content = response.message.content 
     content = re.sub(r"```json|```", "", content).strip()
 
     match = re.search(r'\{.*\}', content, re.DOTALL)

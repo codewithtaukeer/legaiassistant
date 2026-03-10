@@ -70,7 +70,7 @@ def search_legal_sections(query, top_k=3):
             "section": str(data.iloc[i]["section"]),
             "title": str(data.iloc[i]["title"]),
             "text": str(data.iloc[i]["text"]),
-            "relevance_score": relevance
+            "relevance_score": relevance 
         })
 
     results.sort(key=lambda x: x["relevance_score"], reverse=True)
