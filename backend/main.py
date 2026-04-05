@@ -19,6 +19,10 @@ from backend.auth import get_current_user
 from backend.routers import auth_router, chat_router, admin_router
 from backend.routers.chat_router import save_message
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from rag.news_fetcher import fetch_all_news, get_cached_news
+
+
 import os
 import uuid
 
@@ -36,6 +40,16 @@ app.include_router(auth_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_router.router)
 
+scheduler = BackgroundScheduler()
+scheduler.add_job(fetch_all_news, 'interval', hours=4, id='news_fetch')
+scheduler.start()
+
+@app.on_event("startup")
+def startup_event():
+    # Fetch news on startup if cache is empty
+    import os
+    if not os.path.exists("data/legal_news_cache.json"):
+        fetch_all_news()
 
 @app.get("/")
 def home():
@@ -46,6 +60,7 @@ def home():
 def ask_question(
     question: str,
     session_id: str = None,
+    mode: str = "auto",
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
@@ -64,17 +79,18 @@ def ask_question(
 
     is_procedure = is_procedure_query(english_question)
 
-    # Run all searches in parallel
     with ThreadPoolExecutor() as executor:
-        future_pdf      = executor.submit(search_pdf, english_question)
-        future_sections = executor.submit(search_legal_sections, english_question)
+        future_pdf        = executor.submit(search_pdf, english_question)
+        future_sections   = executor.submit(search_legal_sections, english_question)
         future_procedures = executor.submit(search_procedures, english_question, 5) if is_procedure else None
-        future_cases    = executor.submit(search_case_laws, english_question, 3) if not is_procedure else None
+        future_cases      = executor.submit(search_case_laws, english_question, 3) if not is_procedure else None
 
         pdf_results = future_pdf.result()
         sections    = future_sections.result()
         procedures  = future_procedures.result() if future_procedures else []
         case_laws   = future_cases.result() if future_cases else []
+
+    pdf_results = [r for r in pdf_results if r.get("relevance_score", 0) > 0.35]
 
     pdf_context = [
         {
@@ -97,7 +113,7 @@ def ask_question(
         for m in messages[-8:]:
             history.append({"question": m.content, "answer": ""} if m.role == "user" else {"question": "", "answer": m.content})
 
-    result = generate_answer(english_question, context, history, procedures, user_language, case_laws)
+    result = generate_answer(english_question, context, history, procedures, user_language, case_laws, mode=mode)
 
     final_answer = result["answer"]
     if user_language not in ("en", "hinglish"):
@@ -129,8 +145,8 @@ def ask_question(
                 "passage": f"Documents: {p['documents_required']} | Fees: {p['fees']} | Time: {p['time']}",
                 "relevance_score": p["relevance_score"]
             })
-    for c in case_laws: 
-        if c["relevance_score"] > 0.6:
+    for c in case_laws:
+        if c["relevance_score"] > 0.5:
             citations.append({
                 "type": "case",
                 "source": c["case_name"],
@@ -157,6 +173,18 @@ def ask_question(
         "related_questions": result.get("related_questions", [])
     }
 
+@app.get("/news")
+def get_news(current_user=Depends(get_current_user)):
+    data = get_cached_news()
+    return data
+
+@app.post("/news/refresh")
+def refresh_news(current_user=Depends(get_current_user)):
+    articles = fetch_all_news()
+    return {
+        "message": f"Fetched {len(articles)} articles",
+        "last_updated": articles[0]["published"] if articles else None
+    }
 
 class FeedbackRequest(BaseModel):
     message_id: str
@@ -209,4 +237,4 @@ def get_uploaded_pdfs(current_user=Depends(get_current_user)):
 @app.delete("/clear_pdfs")
 def clear_pdfs(current_user=Depends(get_current_user)):
     clear_pdf_index()
-    return {"message": "PDF index cleared"} 
+    return {"message": "PDF index cleared"}

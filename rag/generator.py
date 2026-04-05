@@ -1,6 +1,9 @@
 import ollama
 import json
 import re
+import os
+import httpx
+from groq import Groq
 
 
 def fix_json(text):
@@ -24,7 +27,45 @@ def fix_json(text):
     return ''.join(result)
 
 
-def generate_answer(question, sections, history=[], procedures=[], user_language="en", case_laws=[]):
+def is_internet_available():
+    try:
+        httpx.get("https://api.groq.com", timeout=3)
+        return True
+    except:
+        return False
+
+
+def call_llm(prompt: str, mode: str = "auto") -> str:
+    use_groq = False
+    if mode == "online":
+        use_groq = True
+    elif mode == "offline":
+        use_groq = False
+    else:
+        use_groq = is_internet_available()
+
+    if use_groq:
+        try:
+            client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=2048,
+                temperature=0.3
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            print(f"Groq failed: {e}, falling back to Ollama")
+
+    response = ollama.chat(
+        model="mistral",
+        messages=[{"role": "user", "content": prompt}],
+        options={"num_predict": 2048, "temperature": 0.3}
+    )
+    return response.message.content
+
+
+def generate_answer(question, sections, history=[], procedures=[], user_language="en", case_laws=[], mode="auto"):
 
     context_parts = []
     for s in sections:
@@ -97,38 +138,40 @@ QUESTION:
 {question}
 
 Instructions:
-1. If the answer is in the LEGAL CONTEXT or PROCEDURE INFORMATION, use it as your primary source and elaborate clearly.
+1. Give a DETAILED answer of at least 4-6 sentences. Include:
+   - What the law says exactly
+   - What it means in simple terms
+   - Who it applies to
+   - What are the possible punishments with conditions
+   - Any important exceptions or related sections
+   Never just quote the law — always explain it clearly like a lawyer talking to a common person.
 2. Keep your "answer" field focused on the direct legal answer only — do NOT include case references in the answer field.
-3. In the "case_analysis" field, ONLY include cases that are DIRECTLY relevant to the question. 
-   If none of the provided cases are genuinely relevant, return an empty string for case_analysis.
-   Do NOT include cases just because they mention the same section number — they must be topically relevant.
+3. In the "case_analysis" field, for EACH relevant landmark case write a complete structured entry like this:
+   **Case Name (Year) - Court Name**
+   Facts: Brief facts of the case.
+   Decision: What the court decided.
+   Significance: Why this case matters and how it applies to the question.
+   ---
+   ONLY include cases directly relevant to the question. If none are relevant return empty string.
 4. For government procedures, provide step-by-step guidance with exact documents required, fees and timeframes.
 5. If the question is about Indian law but NOT in the context, answer ONLY if highly confident and add: "⚠️ This is based on general legal knowledge, not your uploaded documents."
 6. NEVER guess specific section numbers or punishments you are not sure about.
 7. Write like a helpful lawyer and government advisor explaining to a common citizen — clear, simple and practical.
 8. Generate 3 related follow-up questions the user might want to ask next.
 9. Return ONLY raw JSON. No markdown, no backticks, no extra text.
+10. 5. STRICT RELEVANCE: Only answer what was asked. Do NOT mention unrelated laws, acts, or punishments that were not asked about. If the question is about driving licence, only talk about driving licence. Never mix topics.
 
 Return ONLY this JSON:
 {{
-"answer": "direct legal answer only, no case references here",
-"case_analysis": "explanation of relevant landmark cases and what they established, or empty string if no relevant cases",
+"answer": "detailed legal answer, at least 4-6 sentences, no case references here",
+"case_analysis": "complete structured case entries or empty string",
 "relevant_laws": ["law or procedure names here"],
 "summary": "short 2 sentence summary",
 "related_questions": ["question 1", "question 2", "question 3"]
 }}
 """
 
-    # CORRECT - num_gpu goes INSIDE the options dict
-    response = ollama.chat(
-        model="mistral",
-        messages=[{"role": "user", "content": prompt}],
-        options={
-            "num_predict": 2048
-        }
-    )
-
-    content = response.message.content 
+    content = call_llm(prompt, mode=mode)
     content = re.sub(r"```json|```", "", content).strip()
 
     match = re.search(r'\{.*\}', content, re.DOTALL)

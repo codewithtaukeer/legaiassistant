@@ -1,0 +1,9 @@
+[33mfb6ef0d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Optimized the search by doing every data search parallely
+[33m23993f8[m Corrected the case example not showing bug
+[33m3aa6e29[m Added the case example section
+[33m7527906[m Added procedures thing and also voice input feature
+[33mb4f398b[m added few more ipc rules
+[33me9758c8[m Model 1 ready
+[33mf682248[m backend for webapp
+[33m26c41ba[m Ml part completed
+[33m2c231ec[m Initial commit

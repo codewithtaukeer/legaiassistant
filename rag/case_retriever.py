@@ -27,7 +27,7 @@ index = faiss.IndexFlatIP(dimension)
 norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
 normalized = embeddings / (norms + 1e-10)
 index.add(np.array(normalized))
-
+ 
 
 def search_case_laws(query, top_k=3):
     query_embedding = model.encode([query])
@@ -51,7 +51,7 @@ def search_case_laws(query, top_k=3):
 
     results = []
     for i, scores in combined.items():
-        relevance = round((scores["semantic_score"] * 0.7) + (scores["keyword_score"] * 0.3), 4)
+        relevance = round((scores["semantic_score"] * 0.7) + (scores["keyword_score"] * 0.3), 3)
         row = data.iloc[i]
         results.append({
             "case_name": str(row["case_name"]),

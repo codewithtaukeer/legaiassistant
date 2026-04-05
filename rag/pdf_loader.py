@@ -9,11 +9,11 @@ def load_pdf_text(file_path):
 
 
 def load_pdf_with_pages(file_path):
-    """Returns list of (page_number, text) tuples"""
+    
     doc = fitz.open(file_path)
     pages = []
     for page_num, page in enumerate(doc, start=1):
         text = page.get_text()
         if text.strip():
-            pages.append((page_num, text))
+            pages.append((page_num, text)) ##list of page number,text dega
     return pages

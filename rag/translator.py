@@ -9,7 +9,7 @@ def translate_to_english(text: str) -> str:
 
 
 def translate_from_english(text: str, target_lang: str) -> str:
-    # English or Hinglish — no translation needed, model handles it via prompt
+    
     if target_lang in ("en", "hinglish"):
         return text
 
