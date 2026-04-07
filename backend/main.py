@@ -22,9 +22,10 @@ from backend.database import get_db
 from backend.auth import get_current_user
 from backend.routers import auth_router, chat_router, admin_router, document_generator
 from backend.routers.chat_router import save_message
-
-# ── NEW: Argue Mode router ────────────────────────────────────────────────────
 from backend.routers.argue_router import router as argue_router
+
+# ── NEW: Case Finder router ───────────────────────────────────────────────────
+from backend.routers.case_finder_router import router as case_finder_router
 
 from apscheduler.schedulers.background import BackgroundScheduler
   
@@ -42,9 +43,10 @@ app.include_router(auth_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_router.router)
 app.include_router(document_generator.router)
-
-# ── Register argue router ─────────────────────────────────────────────────────
 app.include_router(argue_router)
+
+# ── Register case finder router ───────────────────────────────────────────────
+app.include_router(case_finder_router)
 
 os.makedirs("generated_documents", exist_ok=True)
 app.mount("/generated_documents", StaticFiles(directory="generated_documents"), name="generated_documents")

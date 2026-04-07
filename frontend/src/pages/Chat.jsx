@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api from '../api'
 import ReactMarkdown from 'react-markdown'
-import ArgueMode from './ArgueMode' // <-- import ArgueMode
+import ArgueMode from './ArgueMode'
 
 const DOCUMENT_TYPES = [
   { id: 'fir', name: 'FIR', icon: '📋' },
@@ -32,21 +32,33 @@ export default function Chat() {
   const [showNewsModal, setShowNewsModal] = useState(false)
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [newsFilter, setNewsFilter] = useState('All')
-
   const [chatMode, setChatMode] = useState('normal')
   const [documentType, setDocumentType] = useState('')
   const [documentDraft, setDocumentDraft] = useState({})
   const [showDocPicker, setShowDocPicker] = useState(false)
-
-  // NEW: argue mode toggle
   const [showArgueMode, setShowArgueMode] = useState(false)
+
+  // ── Similar cases state ─────────────────────────────────────────────────────
+  const [similarCases, setSimilarCases] = useState([])
+  const [similarLoading, setSimilarLoading] = useState(false)
+  const [showSimilarPanel, setShowSimilarPanel] = useState(false)
+  const [expandedSimilar, setExpandedSimilar] = useState(null)
 
   const messagesEndRef = useRef(null)
   const navigate = useNavigate()
+  const location = useLocation()
   const username = localStorage.getItem('username')
 
   useEffect(() => { loadSessions() }, [])
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  // Handle prefill from CaseFinder "Use in chat" button
+  useEffect(() => {
+    if (location.state?.prefill) {
+      setInput(location.state.prefill)
+      navigate('/', { replace: true, state: {} })
+    }
+  }, [location.state])
 
   const loadSessions = async () => {
     try { const res = await api.get('/chat/sessions'); setSessions(res.data.sessions) } catch {}
@@ -68,17 +80,14 @@ export default function Chat() {
     try {
       const res = await api.post('/chat/session/new')
       await loadSessions(); setActiveSession(res.data.session_id); setMessages([]); setCitations([])
-      setChatMode('normal')
-      setDocumentType('')
-      setDocumentDraft({})
-      setShowDocPicker(false)
-      setShowArgueMode(false) // close argue mode on new chat
+      setChatMode('normal'); setDocumentType(''); setDocumentDraft({}); setShowDocPicker(false)
+      setShowArgueMode(false); setSimilarCases([]); setShowSimilarPanel(false)
     } catch {}
   }
 
   const loadSession = async (sessionId) => {
-    setActiveSession(sessionId); setCitations([])
-    setShowArgueMode(false) // close argue mode when loading session
+    setActiveSession(sessionId); setCitations([]); setShowArgueMode(false)
+    setSimilarCases([]); setShowSimilarPanel(false)
     try {
       const res = await api.get(`/chat/session/${sessionId}/messages`)
       setMessages(res.data.messages.map(m => ({ role: m.role, content: m.content, citations: m.citations, relevant_laws: m.relevant_laws })))
@@ -115,18 +124,8 @@ export default function Chat() {
 
   const suggestions = ['What is punishment for murder?', 'What are fundamental rights?', 'What is Section 420 IPC?']
 
-  const switchToNormal = () => {
-    setChatMode('normal')
-    setDocumentType('')
-    setDocumentDraft({})
-    setShowDocPicker(false)
-  }
-
   const handleDocTypePick = (docType) => {
-    setChatMode('document')
-    setDocumentType(docType)
-    setShowDocPicker(false)
-    setDocumentDraft({})
+    setChatMode('document'); setDocumentType(docType); setShowDocPicker(false); setDocumentDraft({})
     setMessages(prev => [...prev, {
       role: 'assistant',
       content: `Document mode enabled. You selected **${docType.toUpperCase()}**. Start describing your issue and I will ask follow-up questions if needed.`
@@ -142,6 +141,20 @@ export default function Chat() {
     await sendDocumentMessage(input.trim(), true)
   }
 
+  // ── Fetch similar cases for a message ─────────────────────────────────────
+  const fetchSimilarCases = async (text) => {
+    if (!text || text.length < 20) return
+    setSimilarLoading(true)
+    setShowSimilarPanel(true)
+    setSimilarCases([])
+    setExpandedSimilar(null)
+    try {
+      const res = await api.post('/cases/search', { query: text, top_k: 5, source: 'both' })
+      setSimilarCases(res.data.results || [])
+    } catch {}
+    finally { setSimilarLoading(false) }
+  }
+
   const sendDocumentMessage = async (userText, forceGenerate = false) => {
     let sessionId = activeSession
     if (!sessionId) {
@@ -151,8 +164,7 @@ export default function Chat() {
       } catch { return }
     }
     setMessages(prev => [...prev, { role: 'user', content: userText }])
-    setInput('')
-    setLoading(true)
+    setInput(''); setLoading(true)
     try {
       const res = await api.post('/documents/chat', {
         session_id: sessionId, document_type: documentType, message: userText,
@@ -161,14 +173,13 @@ export default function Chat() {
       if (res.data.draft) setDocumentDraft(res.data.draft)
       const assistantMsg = {
         role: 'assistant', content: res.data.answer, citations: res.data.citations || [],
-        relevant_laws: [], summary: '', related_questions: [], options: res.data.options || [],
-        download_url: res.data.download_url || '', document_generated: !!res.data.document_generated,
-        document_type: res.data.document_type || documentType, can_generate: !!res.data.can_generate,
+        relevant_laws: [], download_url: res.data.download_url || '',
+        document_generated: !!res.data.document_generated,
+        document_type: res.data.document_type || documentType,
       }
       setMessages(prev => [...prev, assistantMsg])
       if (res.data.citations?.length > 0) setCitations(res.data.citations)
       loadSessions()
-      if (res.data.document_generated && res.data.download_url) setShowDocPicker(false)
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
     } finally { setLoading(false) }
@@ -190,11 +201,12 @@ export default function Chat() {
     const currentInput = input; setInput(''); setLoading(true)
     try {
       const res = await api.get('/ask', { params: { question: currentInput, session_id: sessionId, mode: llmMode, chat_mode: 'normal' } })
-      setMessages(prev => [...prev, {
+      const assistantMsg = {
         role: 'assistant', content: res.data.answer, case_analysis: res.data.case_analysis || '',
         citations: res.data.citations, relevant_laws: res.data.relevant_laws,
         summary: res.data.summary, related_questions: res.data.related_questions || []
-      }])
+      }
+      setMessages(prev => [...prev, assistantMsg])
       if (res.data.citations?.length > 0) setCitations(res.data.citations)
       loadSessions()
     } catch {
@@ -211,6 +223,8 @@ export default function Chat() {
     } catch { setUploadMsg('Upload failed. Please try again.') }
     finally { setUploading(false) }
   }
+
+  const scoreColor = (s) => s >= 0.75 ? '#22c55e' : s >= 0.5 ? '#c9a84c' : s >= 0.3 ? '#f59e0b' : '#6b7280'
 
   return (
     <>
@@ -231,7 +245,6 @@ export default function Chat() {
         .sb-new-btn:hover{background:var(--gold-light);transform:translateY(-1px)}
         .sb-sessions{flex:1;overflow-y:auto;padding:8px}
         .sb-sessions::-webkit-scrollbar{width:4px}
-        .sb-sessions::-webkit-scrollbar-track{background:transparent}
         .sb-sessions::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
         .sb-session{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;gap:8px;margin-bottom:2px}
         .sb-session:hover{background:var(--dark3)}
@@ -254,9 +267,7 @@ export default function Chat() {
         @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         .upload-input{display:block;font-size:12px;color:var(--text3);margin-bottom:8px;cursor:pointer}
         .upload-input::file-selector-button{background:var(--dark4);border:1px solid var(--border2);color:var(--text2);padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-right:8px}
-        .upload-input::file-selector-button:hover{border-color:var(--gold-border);color:var(--gold)}
         .upload-submit{width:100%;background:var(--gold);border:none;border-radius:6px;padding:8px;font-size:13px;font-weight:500;color:#080808;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-top:4px}
-        .upload-submit:hover:not(:disabled){background:var(--gold-light)}
         .upload-submit:disabled{opacity:0.5;cursor:not-allowed}
         .upload-msg{font-size:12px;color:var(--gold);margin-top:8px;text-align:center}
         .doc-mode-box{background:var(--dark3);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-top:8px}
@@ -309,6 +320,8 @@ export default function Chat() {
         .msg-fb-btn.active{background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold)}
         .msg-cite-btn{background:var(--dark3);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text3);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:4px}
         .msg-cite-btn:hover{border-color:var(--gold-border);color:var(--gold)}
+        .msg-similar-btn{background:var(--dark3);border:1px solid rgba(59,130,246,0.25);border-radius:6px;padding:4px 10px;font-size:12px;color:#3b82f6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:4px}
+        .msg-similar-btn:hover{border-color:rgba(59,130,246,0.5);background:rgba(59,130,246,0.1)}
         .case-analysis{background:var(--dark3);border:1px solid var(--gold-border);border-left:3px solid var(--gold);border-radius:12px;padding:16px 18px;max-width:100%}
         .case-analysis-hdr{font-size:11px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
         .related-questions{display:flex;flex-direction:column;gap:6px;max-width:100%}
@@ -342,24 +355,45 @@ export default function Chat() {
         .input-mode-dot{width:5px;height:5px;border-radius:50%;background:var(--gold)}
         .input-disclaimer{font-size:11px;color:var(--text3)}
 
-        /* CITATIONS PANEL */
+        /* RIGHT PANEL (citations + similar cases) */
         .cite-panel{width:320px;min-width:320px;background:var(--dark2);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;animation:slideFromRight 0.25s ease}
         @keyframes slideFromRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-        .cite-hdr{padding:16px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between}
-        .cite-hdr h3{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--text1)}
+        .cite-hdr{padding:14px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+        .cite-hdr h3{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--text1)}
         .cite-close{background:none;border:1px solid var(--border2);border-radius:6px;width:28px;height:28px;cursor:pointer;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
         .cite-close:hover{border-color:rgba(255,80,80,0.4);color:var(--danger)}
-        .cite-list{overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+        .cite-tabs{display:flex;border-bottom:1px solid var(--border2);flex-shrink:0}
+        .cite-tab{flex:1;padding:9px;font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;transition:all 0.2s;border-bottom:2px solid transparent}
+        .cite-tab:hover{color:var(--text1)}
+        .cite-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+        .cite-list{overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;flex:1}
         .cite-list::-webkit-scrollbar{width:3px}
         .cite-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
         .cite-card{background:var(--dark3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;transition:border-color 0.2s}
         .cite-card:hover{border-color:var(--gold-border)}
         .cite-source{font-size:12px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:6px;margin-bottom:4px}
-        .cite-page{font-size:11px;color:var(--text3);background:var(--dark4);padding:1px 6px;border-radius:4px;margin-left:auto}
         .cite-title{font-size:12px;color:var(--text3);margin-bottom:6px;font-style:italic}
         .cite-passage{font-size:12px;color:var(--text2);line-height:1.5}
         .cite-score{font-size:11px;color:var(--text3);margin-top:8px;display:flex;align-items:center;gap:4px}
         .cite-score-bar{height:3px;background:var(--gold-dim);border-radius:2px;flex:1}
+
+        /* SIMILAR CASES CARDS */
+        .similar-card{background:var(--dark3);border:1px solid var(--border2);border-radius:10px;overflow:hidden;transition:border-color 0.2s;cursor:pointer}
+        .similar-card:hover{border-color:var(--gold-border)}
+        .similar-card-top{padding:12px 14px}
+        .similar-card-name{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--text1);margin-bottom:4px;line-height:1.3}
+        .similar-card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+        .similar-meta-tag{font-size:10px;color:var(--text3);background:var(--dark4);border-radius:4px;padding:1px 6px;border:1px solid var(--border2)}
+        .similar-card-sig{font-size:12px;color:var(--text3);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .similar-card-expanded{border-top:1px solid var(--border2);padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--dark4)}
+        .similar-section-title{font-size:10px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+        .similar-score-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid;margin-bottom:6px}
+        .similar-kanoon-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--gold);text-decoration:none;margin-top:4px}
+        .similar-kanoon-link:hover{text-decoration:underline}
+        .similar-loading{display:flex;flex-direction:column;align-items:center;gap:10px;padding:32px 16px;color:var(--text3)}
+        .similar-spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .similar-empty{text-align:center;padding:32px 16px;color:var(--text3);font-size:13px}
 
         /* NEWS MODAL */
         .news-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}
@@ -382,7 +416,6 @@ export default function Chat() {
         .news-read-more{font-size:12px;color:var(--gold);font-weight:500}
         .news-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:16px}
         .news-spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
         .news-cat-bar{display:flex;gap:8px;padding:12px 28px;border-bottom:1px solid var(--border2);overflow-x:auto}
         .news-cat-btn{background:none;border:1px solid var(--border2);border-radius:999px;padding:5px 14px;font-size:12px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all 0.2s}
         .news-cat-btn:hover,.news-cat-btn.active{border-color:var(--gold-border);color:var(--gold);background:var(--gold-dim)}
@@ -421,8 +454,7 @@ export default function Chat() {
             <button className="sb-action-btn" onClick={() => setShowUpload(!showUpload)}>📄 Upload PDF</button>
             {showUpload && (
               <div className="upload-box">
-                <input type="file" accept=".pdf" className="upload-input"
-                  onChange={e => setUploadFile(e.target.files[0])} />
+                <input type="file" accept=".pdf" className="upload-input" onChange={e => setUploadFile(e.target.files[0])} />
                 <button className="upload-submit" onClick={handleUpload} disabled={!uploadFile || uploading}>
                   {uploading ? 'Uploading...' : 'Upload'}
                 </button>
@@ -430,32 +462,27 @@ export default function Chat() {
               </div>
             )}
 
-            <button className="sb-action-btn" onClick={() => setShowDocPicker(v => !v)}>
-              📝 Document Mode
-            </button>
+            <button className="sb-action-btn" onClick={() => setShowDocPicker(v => !v)}>📝 Document Mode</button>
             {showDocPicker && (
               <div className="doc-mode-box">
                 <div className="doc-mode-title">Choose document type</div>
                 <div className="doc-type-row">
                   {DOCUMENT_TYPES.map(d => (
                     <button key={d.id} className={`doc-pill ${documentType === d.id ? 'active' : ''}`}
-                      onClick={() => handleDocTypePick(d.id)}>
-                      {d.icon} {d.name}
-                    </button>
+                      onClick={() => handleDocTypePick(d.id)}>{d.icon} {d.name}</button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* ── ARGUE MODE BUTTON ── */}
-            <button
-              className={`sb-action-btn ${showArgueMode ? 'active' : ''}`}
-              onClick={() => {
-                setShowArgueMode(v => !v)
-                setShowDocPicker(false)
-              }}
-            >
+            <button className={`sb-action-btn ${showArgueMode ? 'active' : ''}`}
+              onClick={() => { setShowArgueMode(v => !v); setShowDocPicker(false) }}>
               ⚖️ Argue Both Sides
+            </button>
+
+            {/* ── CASE FINDER button ── */}
+            <button className="sb-action-btn" onClick={() => navigate('/case-finder')}>
+              🔍 Find Similar Cases
             </button>
 
             <button className="sb-action-btn" onClick={() => { setShowNewsModal(true); if (news.length === 0) loadNews() }}>
@@ -476,7 +503,6 @@ export default function Chat() {
         <div className="chat-main">
           <div className="chat-main-bg" />
 
-          {/* ── ARGUE MODE PANEL (replaces chat area) ── */}
           {showArgueMode ? (
             <ArgueMode onClose={() => setShowArgueMode(false)} />
           ) : (
@@ -508,14 +534,10 @@ export default function Chat() {
                             <div className="doc-options">
                               <a className="doc-option-btn"
                                 href={`http://localhost:8000${msg.download_url}`}
-                                target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                                📄 Open PDF
-                              </a>
+                                target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>📄 Open PDF</a>
                               <a className="doc-option-btn"
                                 href={`http://localhost:8000${msg.download_url}`}
-                                download rel="noreferrer" style={{ textDecoration: 'none' }}>
-                                ⬇ Download
-                              </a>
+                                download rel="noreferrer" style={{ textDecoration: 'none' }}>⬇ Download</a>
                             </div>
                           )}
                           {msg.role === 'assistant' && (
@@ -526,10 +548,24 @@ export default function Chat() {
                                 onClick={() => handleFeedback(i, 'down')}>👎</button>
                               {msg.citations?.length > 0 && (
                                 <button className="msg-cite-btn"
-                                  onClick={() => { setCitations(msg.citations); setShowCitations(true) }}>
+                                  onClick={() => { setCitations(msg.citations); setShowCitations(true); setShowSimilarPanel(false) }}>
                                   📚 {msg.citations.length} source{msg.citations.length > 1 ? 's' : ''}
                                 </button>
                               )}
+                              {/* ── Similar Cases button on each message ── */}
+                              <button className="msg-similar-btn"
+                                onClick={() => fetchSimilarCases(msg.content)}>
+                                🔍 Similar Cases
+                              </button>
+                            </div>
+                          )}
+                          {/* User messages also get similar cases button */}
+                          {msg.role === 'user' && (
+                            <div style={{ marginTop: 8 }}>
+                              <button className="msg-similar-btn"
+                                onClick={() => fetchSimilarCases(msg.content)}>
+                                🔍 Find Similar Cases
+                              </button>
                             </div>
                           )}
                         </div>
@@ -593,20 +629,32 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Citations Panel */}
-        {showCitations && citations.length > 0 && !showArgueMode && (
+        {/* ── RIGHT PANEL: Citations OR Similar Cases ── */}
+        {(showCitations || showSimilarPanel) && !showArgueMode && (
           <div className="cite-panel">
             <div className="cite-hdr">
-              <h3>📚 Sources</h3>
-              <button className="cite-close" onClick={() => setShowCitations(false)}>✕</button>
+              <h3>{showSimilarPanel ? '🔍 Similar Cases' : '📚 Sources'}</h3>
+              <button className="cite-close" onClick={() => { setShowCitations(false); setShowSimilarPanel(false) }}>✕</button>
             </div>
+
+            {/* Tabs if both available */}
+            {showCitations && showSimilarPanel && (
+              <div className="cite-tabs">
+                <button className={`cite-tab ${!showSimilarPanel ? 'active' : ''}`}
+                  onClick={() => setShowSimilarPanel(false)}>📚 Sources</button>
+                <button className={`cite-tab ${showSimilarPanel ? 'active' : ''}`}
+                  onClick={() => setShowSimilarPanel(true)}>🔍 Similar Cases</button>
+              </div>
+            )}
+
             <div className="cite-list">
-              {citations.map((c, i) => (
+              {/* CITATIONS VIEW */}
+              {showCitations && !showSimilarPanel && citations.map((c, i) => (
                 <div key={i} className="cite-card">
                   <div className="cite-source">
                     {c.type === 'law' ? '⚖️' : c.type === 'procedure' ? '🏛️' : c.type === 'case' ? '📋' : '📄'}
                     {c.source}
-                    {c.page && <span className="cite-page">p.{c.page}</span>}
+                    {c.page && <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--dark4)', padding: '1px 6px', borderRadius: 4, marginLeft: 'auto' }}>p.{c.page}</span>}
                   </div>
                   {c.title && <div className="cite-title">{c.title}</div>}
                   <div className="cite-passage">{c.passage}</div>
@@ -618,6 +666,69 @@ export default function Chat() {
                   </div>
                 </div>
               ))}
+
+              {/* SIMILAR CASES VIEW */}
+              {showSimilarPanel && (
+                <>
+                  {similarLoading && (
+                    <div className="similar-loading">
+                      <div className="similar-spinner" />
+                      <span style={{ fontSize: 13 }}>Searching case database...</span>
+                    </div>
+                  )}
+                  {!similarLoading && similarCases.length === 0 && (
+                    <div className="similar-empty">No similar cases found.<br />Try a different message.</div>
+                  )}
+                  {!similarLoading && similarCases.map((c, idx) => {
+                    const score = c.relevance_score
+                    const color = score >= 0.75 ? '#22c55e' : score >= 0.5 ? '#c9a84c' : '#f59e0b'
+                    const isOpen = expandedSimilar === idx
+                    return (
+                      <div key={idx} className="similar-card" onClick={() => setExpandedSimilar(isOpen ? null : idx)}>
+                        <div className="similar-card-top">
+                          <div className="similar-score-badge" style={{ color, borderColor: `${color}40`, background: `${color}15` }}>
+                            ● {Math.round(score * 100)}% match
+                          </div>
+                          <div className="similar-card-name">{c.case_name}</div>
+                          <div className="similar-card-meta">
+                            {c.court && <span className="similar-meta-tag">🏛️ {c.court}</span>}
+                            {c.year && c.year !== 'N/A' && <span className="similar-meta-tag">📅 {c.year}</span>}
+                            {c.act && <span className="similar-meta-tag">{c.act}</span>}
+                          </div>
+                          <div className="similar-card-sig">{c.significance || c.summary}</div>
+                        </div>
+                        {isOpen && (
+                          <div className="similar-card-expanded">
+                            <div>
+                              <div className="similar-section-title">Summary</div>
+                              <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>{c.summary}</div>
+                            </div>
+                            {c.significance && (
+                              <div>
+                                <div className="similar-section-title">Verdict / Significance</div>
+                                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>{c.significance}</div>
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                              {c.url && (
+                                <a href={c.url} target="_blank" rel="noopener noreferrer" className="similar-kanoon-link">
+                                  🔗 Full Judgment
+                                </a>
+                              )}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); navigate('/case-finder', { state: { query: c.case_name } }) }}
+                                style={{ background: 'none', border: 'none', color: 'var(--gold)', fontSize: 11, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}
+                              >
+                                ↗ Explore in Case Finder
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </>
+              )}
             </div>
           </div>
         )}
@@ -645,10 +756,7 @@ export default function Chat() {
                 ))}
               </div>
               {newsLoading && news.length === 0 ? (
-                <div className="news-loading">
-                  <div className="news-spinner" />
-                  Fetching latest legal news...
-                </div>
+                <div className="news-loading"><div className="news-spinner" />Fetching latest legal news...</div>
               ) : (
                 <div className="news-grid">
                   {news.filter(a => newsFilter === 'All' || a.category === newsFilter).slice(0, 30).map((article, i) => (
@@ -673,7 +781,6 @@ export default function Chat() {
           </div>
         )}
 
-        {/* Article Modal */}
         {selectedArticle && (
           <div className="news-overlay" onClick={() => setSelectedArticle(null)}>
             <div className="article-modal" onClick={e => e.stopPropagation()}>

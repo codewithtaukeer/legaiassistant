@@ -4,7 +4,8 @@ import Register from './pages/Register'
 import Chat from './pages/Chat'
 import Admin from './pages/Admin'
 import Landing from './pages/Landing'
-import DocumentGenerator from './pages/DocumentGenerator'  // ADD THIS IMPORT
+import DocumentGenerator from './pages/DocumentGenerator'
+import CaseFinder from './pages/CaseFinder'   // ← NEW
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token')
@@ -27,8 +28,9 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<PrivateRoute><Chat /></PrivateRoute>} />
       <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-      {/* ADD THIS ROUTE */}
       <Route path="/document-generator" element={<PrivateRoute><DocumentGenerator /></PrivateRoute>} />
+      {/* NEW: Case Finder route */}
+      <Route path="/case-finder" element={<PrivateRoute><CaseFinder /></PrivateRoute>} />
     </Routes>
   )
 }
