@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.database import get_db, ChatSession, Message, User
@@ -6,7 +7,6 @@ import uuid
 import json
 from datetime import datetime
 from backend.database import Feedback
-
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -90,7 +90,10 @@ def delete_session(session_id: str, db: Session = Depends(get_db), current_user:
     return {"message": "Session deleted"}
 
 
-def save_message(db, session_id, role, content, relevant_laws=[], citations=[]):
+def save_message(db, session_id, role, content, relevant_laws=None, citations=None):
+    relevant_laws = relevant_laws or []
+    citations = citations or []
+
     message = Message(
         session_id=session_id,
         role=role,
@@ -100,12 +103,11 @@ def save_message(db, session_id, role, content, relevant_laws=[], citations=[]):
     )
     db.add(message)
 
-    # Update session title from first user message
-    if role == "user":
-        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
-        if session and session.title == "New Chat":
+    session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    if session:
+        session.updated_at = datetime.utcnow()
+        if role == "user" and session.title == "New Chat":
             session.title = content[:50] + "..." if len(content) > 50 else content
-            session.updated_at = datetime.utcnow()
 
     db.commit()
 
@@ -131,7 +133,6 @@ def submit_feedback(
 
 @router.get("/feedback/good")
 def get_good_answers(db: Session = Depends(get_db)):
-    """Returns top rated Q&A pairs to use as examples in prompts"""
     good = db.query(Feedback).filter(
         Feedback.rating == "up"
     ).order_by(Feedback.created_at.desc()).limit(10).all()

@@ -89,8 +89,22 @@ export default function Admin() {
           <button className={`${styles.navBtn} ${activeTab === 'users' ? styles.active : ''}`} onClick={() => setActiveTab('users')}>👥 Users</button>
           <button className={`${styles.navBtn} ${activeTab === 'pdfs' ? styles.active : ''}`} onClick={() => setActiveTab('pdfs')}>📄 PDFs</button>
         </nav>
+        <div className={styles.sidebarDivider}></div>
+<button 
+  className={styles.navBtn} 
+  onClick={() => navigate('/document-generator')}
+>
+  📝 Generate Docs
+</button>
         <div className={styles.sidebarBottom}>
           <button className={styles.backBtn} onClick={() => navigate('/')}>← Back to Chat</button>
+          <button 
+  className={styles.featureBtn} 
+  onClick={() => navigate('/document-generator')}
+>
+  ⚡ Legal Documents
+</button>
+
         </div>
       </div>
 

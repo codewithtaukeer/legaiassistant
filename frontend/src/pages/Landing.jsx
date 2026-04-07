@@ -46,6 +46,36 @@ export default function Landing() {
     { icon: '🔄', label: 'Auto Mode', title: 'Intelligent Switching', desc: 'Automatically detects internet connectivity and chooses the best model.', badge: 'Smart' },
   ]
 
+  const docTypes = [
+    { icon: '📋', title: 'FIR', subtitle: 'First Information Report', desc: 'File a criminal complaint with the police. Pre-filled template with all required sections.', color: '#e74c3c', bg: 'rgba(231,76,60,0.08)', border: 'rgba(231,76,60,0.25)' },
+    { icon: '📬', title: 'Legal Notice', subtitle: 'Formal Warning Letter', desc: 'Send an official legal notice to any party with proper legal citations and demand clauses.', color: '#f39c12', bg: 'rgba(243,156,18,0.08)', border: 'rgba(243,156,18,0.25)' },
+    { icon: '🏠', title: 'Rental Agreement', subtitle: 'Landlord–Tenant Contract', desc: 'Create a comprehensive rental agreement with all standard clauses and signature blocks.', color: '#27ae60', bg: 'rgba(39,174,96,0.08)', border: 'rgba(39,174,96,0.25)' },
+    { icon: '✍️', title: 'Affidavit', subtitle: 'Sworn Declaration', desc: 'Generate a legally formatted sworn statement with verification and notary sections.', color: '#8e44ad', bg: 'rgba(142,68,173,0.08)', border: 'rgba(142,68,173,0.25)' },
+  ]
+  const [landingNews, setLandingNews] = useState([])
+const [landingNewsLoading, setLandingNewsLoading] = useState(false)
+const [landingNewsLoaded, setLandingNewsLoaded] = useState(false)
+const [selectedLandingArticle, setSelectedLandingArticle] = useState(null)
+useEffect(() => {
+  if (landingNewsLoaded) return
+  const fetchLandingNews = async () => {
+    setLandingNewsLoading(true)
+    try {
+      const res = await fetch('/api/news', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+      const data = await res.json()
+      setLandingNews(data.articles?.slice(0, 6) || [])
+      setLandingNewsLoaded(true)
+    } catch {}
+    finally { setLandingNewsLoading(false) }
+  }
+  const observer = new IntersectionObserver(
+    (entries) => { if (entries[0].isIntersecting) { fetchLandingNews(); observer.disconnect() } },
+    { threshold: 0.1 }
+  )
+  const el = document.getElementById('lp-news-section')
+  if (el) observer.observe(el)
+  return () => observer.disconnect()
+}, [landingNewsLoaded])
   return (
     <>
       <style>{`
@@ -125,6 +155,23 @@ export default function Landing() {
         .lp-mode-lbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-weight:500}
         .lp-mode-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--text1);margin-bottom:12px;line-height:1.2}
         .lp-mode-desc{font-size:14px;color:var(--text3);line-height:1.65}
+        /* Document Generator Section */
+        .lp-docs{background:var(--dark)}
+        .lp-docs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:64px}
+        .lp-doc-card{border-radius:16px;padding:28px 24px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden}
+        .lp-doc-card:hover{transform:translateY(-6px)}
+        .lp-doc-card:hover .lp-doc-arrow{opacity:1;transform:translateX(0)}
+        .lp-doc-icon{font-size:36px;margin-bottom:16px;display:block}
+        .lp-doc-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;margin-bottom:4px}
+        .lp-doc-subtitle{font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;opacity:0.7}
+        .lp-doc-desc{font-size:13px;line-height:1.6;opacity:0.75;margin-bottom:16px}
+        .lp-doc-arrow{font-size:18px;opacity:0;transform:translateX(-4px);transition:all 0.25s;display:inline-block}
+        .lp-doc-cta{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;background:rgba(255,255,255,0.1);color:inherit}
+        .lp-doc-cta:hover{background:rgba(255,255,255,0.2)}
+        .lp-docs-banner{margin-top:40px;border:1px solid var(--border);border-radius:16px;padding:32px 40px;background:linear-gradient(135deg,var(--dark3),var(--dark2));display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+        .lp-docs-banner-text h3{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--text1);margin-bottom:6px}
+        .lp-docs-banner-text p{font-size:14px;color:var(--text3);line-height:1.5}
+        /* CTA */
         .lp-cta-sec{background:var(--dark);text-align:center;padding:120px 40px}
         .lp-cta-box{max-width:700px;margin:0 auto;border:1px solid var(--border);border-radius:24px;padding:72px 60px;background:linear-gradient(135deg,var(--dark3) 0%,var(--dark2) 100%);position:relative;overflow:hidden}
         .lp-cta-box::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(201,168,76,0.08) 0%,transparent 70%);pointer-events:none}
@@ -135,8 +182,52 @@ export default function Landing() {
         .lp-footer-brand{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--text2)}
         .lp-footer-brand span{color:var(--gold)}
         .lp-footer-note{font-size:13px;color:var(--text3)}
-        @media(max-width:900px){.lp-nav{padding:16px 24px}.lp-feat-grid{grid-template-columns:1fr 1fr}.lp-steps-grid{grid-template-columns:1fr}.lp-modes-grid{grid-template-columns:1fr}.lp-stats{gap:32px}.lp-section{padding:70px 24px}.lp-cta-box{padding:48px 32px}.lp-footer{padding:32px 24px}}
-        @media(max-width:600px){.lp-feat-grid{grid-template-columns:1fr}.lp-step:nth-child(n){border-radius:0}}
+        @media(max-width:900px){.lp-nav{padding:16px 24px}.lp-feat-grid{grid-template-columns:1fr 1fr}.lp-steps-grid{grid-template-columns:1fr}.lp-modes-grid{grid-template-columns:1fr}.lp-docs-grid{grid-template-columns:1fr 1fr}.lp-stats{gap:32px}.lp-section{padding:70px 24px}.lp-cta-box{padding:48px 32px}.lp-footer{padding:32px 24px}}
+        @media(max-width:600px){.lp-feat-grid{grid-template-columns:1fr}.lp-step:nth-child(n){border-radius:0}.lp-docs-grid{grid-template-columns:1fr}}
+        /* Live News Section */
+.lp-news{background:var(--dark2);position:relative;overflow:hidden}
+.lp-news::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 50%,rgba(201,168,76,0.04) 0%,transparent 70%);pointer-events:none}
+.lp-news-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:64px}
+.lp-news-card{background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px 20px;cursor:pointer;transition:all 0.3s;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.lp-news-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.06) 0%,transparent 60%);opacity:0;transition:opacity 0.3s}
+.lp-news-card:hover{border-color:rgba(201,168,76,0.25);transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08)}
+.lp-news-card:hover::before{opacity:1}
+.lp-news-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lp-news-source{font-size:10px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1px}
+.lp-news-cat{font-size:10px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:2px 8px;color:var(--gold)}
+.lp-news-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--text1);line-height:1.4;flex:1}
+.lp-news-summary{font-size:12px;color:var(--text3);line-height:1.6}
+.lp-news-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.lp-news-date{font-size:11px;color:var(--text3)}
+.lp-news-cta{font-size:12px;color:var(--gold);font-weight:500;opacity:0;transition:opacity 0.2s}
+.lp-news-card:hover .lp-news-cta{opacity:1}
+.lp-news-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px;gap:16px;color:var(--text3)}
+.lp-news-spinner{width:32px;height:32px;border:2px solid rgba(201,168,76,0.15);border-top-color:var(--gold);border-radius:50%;animation:lpSpin 0.8s linear infinite}
+@keyframes lpSpin{to{transform:rotate(360deg)}}
+.lp-news-empty{text-align:center;padding:60px 40px;color:var(--text3);font-style:italic;font-family:'Cormorant Garamond',serif;font-size:18px}
+.lp-news-shimmer{background:linear-gradient(90deg,rgba(255,255,255,0.03) 0%,rgba(255,255,255,0.07) 50%,rgba(255,255,255,0.03) 100%);background-size:200% 100%;animation:lpShimmer 1.6s ease infinite;border-radius:6px}
+@keyframes lpShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.lp-news-skeleton{background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;gap:12px}
+.lp-news-view-all{display:flex;justify-content:center;margin-top:32px}
+.lp-news-view-btn{background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);color:var(--gold);padding:12px 32px;border-radius:10px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.25s;backdrop-filter:blur(8px)}
+.lp-news-view-btn:hover{background:rgba(201,168,76,0.15);border-color:rgba(201,168,76,0.4);transform:translateY(-1px)}
+/* News Article Modal */
+.lp-news-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px}
+.lp-news-modal{background:rgba(15,15,15,0.96);border:1px solid rgba(201,168,76,0.2);border-radius:20px;width:100%;max-width:640px;max-height:85vh;overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:16px;box-shadow:0 40px 100px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.06)}
+.lp-news-modal::-webkit-scrollbar{width:4px}
+.lp-news-modal::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:2px}
+.lp-news-modal-hdr{display:flex;align-items:center;justify-content:space-between}
+.lp-news-modal-meta{display:flex;align-items:center;gap:8px}
+.lp-news-modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--text1);line-height:1.4}
+.lp-news-modal-date{font-size:12px;color:var(--text3)}
+.lp-news-modal-divider{height:1px;background:rgba(255,255,255,0.06)}
+.lp-news-modal-body{font-size:15px;color:var(--text2);line-height:1.75}
+.lp-news-modal-link{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:#080808;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500;transition:all 0.2s}
+.lp-news-modal-link:hover{background:var(--gold-light);transform:translateY(-1px)}
+.lp-news-close{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:16px;flex-shrink:0}
+.lp-news-close:hover{border-color:rgba(255,80,80,0.4);color:rgba(255,100,100,0.9);background:rgba(255,80,80,0.08)}
+@media(max-width:900px){.lp-news-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.lp-news-grid{grid-template-columns:1fr}}
       `}</style>
 
       <div style={{ minHeight: '100vh', background: 'var(--dark)', color: 'var(--text1)', fontFamily: "'DM Sans', sans-serif" }}>
@@ -149,6 +240,7 @@ export default function Landing() {
             {isLoggedIn ? (
               <>
                 <span className="lp-user">👤 {username}</span>
+                <button className="lp-btn-ghost" onClick={() => navigate('/document-generator')}>📝 Docs</button>
                 <button className="lp-btn-ghost" onClick={() => navigate('/')}>Open App</button>
                 <button className="lp-btn-danger" onClick={logout}>Logout</button>
               </>
@@ -170,7 +262,10 @@ export default function Landing() {
           <p className="lp-desc">Ask any question about the IPC, Constitution, CrPC, or your own legal documents. Get cited, structured answers in Hindi, Hinglish, or English — instantly.</p>
           <div className="lp-cta">
             {isLoggedIn ? (
-              <button className="lp-btn-lg lp-btn-lg-p" onClick={() => navigate('/')}>Open Legal AI →</button>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button className="lp-btn-lg lp-btn-lg-p" onClick={() => navigate('/')}>Open Legal AI →</button>
+                <button className="lp-btn-lg lp-btn-lg-g" onClick={() => navigate('/document-generator')}>📝 Generate Documents</button>
+              </div>
             ) : (
               <>
                 <button className="lp-btn-lg lp-btn-lg-p" onClick={() => navigate('/register')}>Start For Free →</button>
@@ -179,7 +274,7 @@ export default function Landing() {
             )}
           </div>
           <div className="lp-stats">
-            {[['80+','Legal Sections'],['30+','Landmark Cases'],['3','Languages'],['100%','Privacy Mode']].map(([n,l]) => (
+            {[['80+','Legal Sections'],['30+','Landmark Cases'],['4','Document Types'],['100%','Privacy Mode']].map(([n,l]) => (
               <div key={l} style={{textAlign:'center'}}>
                 <div className="lp-stat-num">{n}</div>
                 <div className="lp-stat-lbl">{l}</div>
@@ -210,8 +305,70 @@ export default function Landing() {
           </div>
         </section>
 
+        {/* ── DOCUMENT GENERATOR SECTION ── */}
+        <section className="lp-section lp-docs">
+          <div className="lp-container">
+            <div className="reveal">
+              <div className="lp-sec-lbl">Document Generator</div>
+              <h2 className="lp-sec-title">Generate Legal<br /><em>Documents Instantly</em></h2>
+              <div className="lp-divider" />
+              <p className="lp-sec-desc">Fill a short form and download a professionally formatted Word document — ready to print and use. No legal drafting knowledge needed.</p>
+            </div>
+
+            <div className="lp-docs-grid">
+              {docTypes.map((d, i) => (
+                <div
+                  key={i}
+                  className={`lp-doc-card reveal rd${i+1}`}
+                  style={{ background: d.bg, border: `1px solid ${d.border}`, color: d.color }}
+                  onClick={() => isLoggedIn ? navigate('/document-generator') : navigate('/login')}
+                >
+                  <span className="lp-doc-icon">{d.icon}</span>
+                  <div className="lp-doc-title">{d.title}</div>
+                  <div className="lp-doc-subtitle" style={{ color: d.color }}>{d.subtitle}</div>
+                  <p className="lp-doc-desc">{d.desc}</p>
+                  <button className="lp-doc-cta" style={{ color: d.color }}>
+                    {isLoggedIn ? 'Generate Now' : 'Sign in to use'}
+                    <span className="lp-doc-arrow">→</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Banner for logged-in users */}
+            {isLoggedIn && (
+              <div className="lp-docs-banner reveal">
+                <div className="lp-docs-banner-text">
+                  <h3>Ready to draft your document?</h3>
+                  <p>Takes under 2 minutes. Fill a form, download a properly formatted .docx file.</p>
+                </div>
+                <button
+                  className="lp-btn-lg lp-btn-lg-p"
+                  onClick={() => navigate('/document-generator')}
+                >
+                  📝 Open Document Generator →
+                </button>
+              </div>
+            )}
+
+            {/* Prompt to register for guests */}
+            {!isLoggedIn && (
+              <div className="lp-docs-banner reveal" style={{ justifyContent: 'center', textAlign: 'center', flexDirection: 'column', gap: 16 }}>
+                <div className="lp-docs-banner-text">
+                  <h3>Free to use — no credit card required</h3>
+                  <p>Create an account in 30 seconds to start generating legal documents.</p>
+                </div>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button className="lp-btn-lg lp-btn-lg-p" onClick={() => navigate('/register')}>Create Free Account →</button>
+                  <button className="lp-btn-lg lp-btn-lg-g" onClick={() => navigate('/login')}>Sign In</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* Steps */}
-        <section className="lp-section lp-steps">
+        <section className="lp-section lp-steps" style={{ background: 'var(--dark2)' }}>
           <div className="lp-container">
             <div className="reveal">
               <div className="lp-sec-lbl">How It Works</div>
@@ -254,7 +411,104 @@ export default function Landing() {
             </div>
           </div>
         </section>
+{/* Live Legal News */}
+<section className="lp-section lp-news" id="lp-news-section">
+  <div className="lp-container">
+    <div className="reveal">
+      <div className="lp-sec-lbl">Live Updates</div>
+      <h2 className="lp-sec-title">Latest Legal<br /><em>News & Judgements</em></h2>
+      <div className="lp-divider" />
+      <p className="lp-sec-desc">Real-time judgements from LiveLaw, Bar &amp; Bench, and Supreme Court Observer — auto-refreshed every 4 hours.</p>
+    </div>
 
+    {landingNewsLoading && (
+      <div className="lp-news-grid" style={{marginTop:64}}>
+        {[1,2,3,4,5,6].map(i => (
+          <div key={i} className="lp-news-skeleton">
+            <div className="lp-news-shimmer" style={{height:12,width:'40%'}} />
+            <div className="lp-news-shimmer" style={{height:16,width:'90%'}} />
+            <div className="lp-news-shimmer" style={{height:14,width:'80%'}} />
+            <div className="lp-news-shimmer" style={{height:12,width:'60%'}} />
+            <div className="lp-news-shimmer" style={{height:11,width:'35%',marginTop:8}} />
+          </div>
+        ))}
+      </div>
+    )}
+
+    {!landingNewsLoading && landingNews.length === 0 && landingNewsLoaded && (
+      <div className="lp-news-empty">No news available right now — check back soon.</div>
+    )}
+
+    {!landingNewsLoading && landingNews.length > 0 && (
+      <>
+        <div className="lp-news-grid">
+          {landingNews.map((article, i) => (
+            <div
+              key={i}
+              className={`lp-news-card reveal rd${(i % 6) + 1}`}
+              onClick={() => setSelectedLandingArticle(article)}
+            >
+              <div className="lp-news-card-top">
+                <span className="lp-news-source">{article.source}</span>
+                <span className="lp-news-cat">{article.category}</span>
+              </div>
+              <div className="lp-news-title">{article.title}</div>
+              <p className="lp-news-summary">{article.summary?.slice(0, 140)}…</p>
+              <div className="lp-news-footer">
+                <span className="lp-news-date">
+                  {article.published
+                    ? new Date(article.published).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : ''}
+                </span>
+                <span className="lp-news-cta">Read more →</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="lp-news-view-all">
+          <button
+            className="lp-news-view-btn"
+            onClick={() => isLoggedIn ? navigate('/') : navigate('/login')}
+          >
+            {isLoggedIn ? '📰 View All News in App →' : '🔐 Sign in to Read More'}
+          </button>
+        </div>
+      </>
+    )}
+  </div>
+</section>
+
+{/* News Article Modal */}
+{selectedLandingArticle && (
+  <div className="lp-news-overlay" onClick={() => setSelectedLandingArticle(null)}>
+    <div className="lp-news-modal" onClick={e => e.stopPropagation()}>
+      <div className="lp-news-modal-hdr">
+        <div className="lp-news-modal-meta">
+          <span className="lp-news-source">{selectedLandingArticle.source}</span>
+          <span className="lp-news-cat">{selectedLandingArticle.category}</span>
+        </div>
+        <button className="lp-news-close" onClick={() => setSelectedLandingArticle(null)}>✕</button>
+      </div>
+      <div className="lp-news-modal-title">{selectedLandingArticle.title}</div>
+      <p className="lp-news-modal-date">
+        {selectedLandingArticle.published
+          ? new Date(selectedLandingArticle.published).toLocaleString('en-IN')
+          : ''}
+      </p>
+      <div className="lp-news-modal-divider" />
+      <p className="lp-news-modal-body">{selectedLandingArticle.summary}</p>
+      <a
+        href={selectedLandingArticle.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="lp-news-modal-link"
+      >
+        🔗 Read Full Article on {selectedLandingArticle.source}
+      </a>
+    </div>
+  </div>
+)}
         {/* CTA */}
         <section className="lp-cta-sec">
           <div className="lp-cta-box reveal">
@@ -262,7 +516,10 @@ export default function Landing() {
             <p className="lp-cta-desc">Free to use. No credit card. Your questions stay private.<br />Built for students, citizens, lawyers, and researchers.</p>
             <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}}>
               {isLoggedIn ? (
-                <button className="lp-btn-lg lp-btn-lg-p" onClick={() => navigate('/')}>Open Legal AI →</button>
+                <>
+                  <button className="lp-btn-lg lp-btn-lg-p" onClick={() => navigate('/')}>Open Legal AI →</button>
+                  <button className="lp-btn-lg lp-btn-lg-g" onClick={() => navigate('/document-generator')}>📝 Generate Documents</button>
+                </>
               ) : (
                 <>
                   <button className="lp-btn-lg lp-btn-lg-p" onClick={() => navigate('/register')}>Create Free Account →</button>
@@ -281,5 +538,3 @@ export default function Landing() {
     </>
   )
 }
-
-

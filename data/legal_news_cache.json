@@ -1,104 +1,23 @@
 {
-  "last_updated": "2026-03-29T16:00:41.569143",
+  "last_updated": "2026-04-06T23:32:49.873523",
   "articles": [
     {
-      "title": "Beyond MADA: Rethinking India’s Mineral Tax Regime towards Coordinated Decentralisation",
-      "summary": "[Vaishnawi Sinha and Saahil Madan are third year law students at NALSAR University of Law, Hyderabad] In November 2025, the Union Government approached the Supreme Court by filing a curative petition against the landmark nine-judge bench ruling rendered in July 2024 in Mineral Area Development Authority v. Steel Authority of India Ltd (“MADA”). Adding to the moment’s gravity, the Chief Justice of India had […]",
-      "url": "https://indiacorplaw.in/2026/03/04/beyond-mada-rethinking-indias-mineral-tax-regime-towards-coordinated-decentralisation/",
+      "title": "Illegality and the Limits of Shareholder Ratification",
+      "summary": "[Umakanth Varottil is a Professor of Corporate Law at the National University of Singapore] The legal structure of a company carries inherent checks and balances. This is because certain corporate actors, usually the board of directors, make decisions that have an impact on company (which is a separate legal personality) and its other constituencies such as […]",
+      "url": "https://indiacorplaw.in/2026/03/31/illegality-and-the-limits-of-shareholder-ratification/",
       "source": "India Corporate Law",
       "category": "Corporate",
-      "published": "Tue, 03 Mar 2026 23:00:56 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=3, tm_hour=23, tm_min=0, tm_sec=56, tm_wday=1, tm_yday=62, tm_isdst=0)"
+      "published": "Tue, 31 Mar 2026 11:35:06 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=31, tm_hour=11, tm_min=35, tm_sec=6, tm_wday=1, tm_yday=90, tm_isdst=0)"
     },
     {
-      "title": "Selective Capital Reduction and Minority Exit: Supreme Court Clarifies the Law",
-      "summary": "[Bharat Vasani is Senior Advisor – Corporate laws and Maharshi Shah an Associate at the Mumbai office of Cyril Amarchand Mangaldas] Summary: This post examines the Supreme Court of India’s recent decision in Pannalal Bhansali v. Bharti Telecom Limited (2026), which considers the legality of selective capital reduction under section 66 of the Companies Act, 2013. It analyses key questions addressed […]",
-      "url": "https://indiacorplaw.in/2026/03/19/selective-capital-reduction-and-minority-exit-supreme-court-clarifies-the-law/",
-      "source": "India Corporate Law",
-      "category": "Corporate",
-      "published": "Thu, 19 Mar 2026 03:35:16 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=19, tm_hour=3, tm_min=35, tm_sec=16, tm_wday=3, tm_yday=78, tm_isdst=0)"
-    },
-    {
-      "title": "Reforming the Runway: A Case for Rethinking Global Airport Slot Allocation",
-      "summary": "[Anirudh Iyer and Arnav Kaushik are 3rd-year B.A.LL.B(Hons) students at RMLNLU, Lucknow] In the aftermath of IndiGo’s large-scale flight cancellations in December 2025, the Directorate General of Civil Aviation (DGCA) mandated the surrender of 10 per cent routes from the winter schedule of India’s largest airline. To reassign these empty slots, the Ministry of Civil Aviation formed a Coordination Committee that would work […]",
-      "url": "https://indiacorplaw.in/2026/03/05/reforming-the-runway-a-case-for-rethinking-global-airport-slot-allocation/",
-      "source": "India Corporate Law",
-      "category": "Corporate",
-      "published": "Thu, 05 Mar 2026 02:13:33 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=5, tm_hour=2, tm_min=13, tm_sec=33, tm_wday=3, tm_yday=64, tm_isdst=0)"
-    },
-    {
-      "title": "2026 SCC Vol. 2 Part 5: Key Supreme Court Cases on Arbitration, GST, Environment Law, Companies Act, & More",
-      "summary": "Explore the latest Supreme Court Cases in 2026 SCC Vol. 2 Part 5 on arbitrability of dispute, Polluter Pays Principle, Registration of documents, detention and seizure of goods, and more. The post 2026 SCC Vol. 2 Part 5: Key Supreme Court Cases on Arbitration, GST, Environment Law, Companies Act, & More appeared first on SCC Times.",
-      "url": "https://www.scconline.com/blog/post/2026/03/29/2026-scc-vol-2-part-5-latest-supreme-court-cases/",
-      "source": "SCC Online Blog",
-      "category": "Judgements",
-      "published": "Sun, 29 Mar 2026 05:30:16 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=29, tm_hour=5, tm_min=30, tm_sec=16, tm_wday=6, tm_yday=88, tm_isdst=0)"
-    },
-    {
-      "title": "The Evasion Principle and Piercing the Corporate Veil in the Execution of Arbitral Awards",
-      "summary": "[Chiranth Mukunda is a 3nd Year B.A., LL.B. (Hons.) student at National Law School of India University, Bengaluru] In IMAX Corporation v. E-City Entertainment Pvt Ltd (‘IMAX’) (30 December 2025), a division bench of the Bombay High Court held that non-parties to an arbitration agreement may be impleaded at the stage of enforcement and execution of an arbitral award by piercing the corporate veil. […]",
-      "url": "https://indiacorplaw.in/2026/03/02/the-evasion-principle-and-piercing-the-corporate-veil-in-the-execution-of-arbitral-awards/",
-      "source": "India Corporate Law",
-      "category": "Corporate",
-      "published": "Sun, 01 Mar 2026 22:11:26 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=1, tm_hour=22, tm_min=11, tm_sec=26, tm_wday=6, tm_yday=60, tm_isdst=0)"
-    },
-    {
-      "title": "DVT and the MSME Protection Gap: Rethinking India’s Merger Control Framework",
-      "summary": "[Harsh Jain is a 3rd year B.A., LL.B. (Hons.) student at National Law Institute University, Bhopal] The introduction of the Deal Value Threshold (DVT) through the Competition (Amendment) Act, 2023, marked a watershed moment in India’s merger control regime. Presently, section 5(d) of the Act mandates scrutiny by the Competition Commission of India (CCI) for transactions exceeding […]",
-      "url": "https://indiacorplaw.in/2026/03/01/dvt-and-the-msme-protection-gap-rethinking-indias-merger-control-framework/",
-      "source": "India Corporate Law",
-      "category": "Corporate",
-      "published": "Sun, 01 Mar 2026 04:01:36 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=1, tm_hour=4, tm_min=1, tm_sec=36, tm_wday=6, tm_yday=60, tm_isdst=0)"
-    },
-    {
-      "title": "Absence of signature on charge curable irregularity, de novo trial not justified unless failure of justice shown: Supreme Court",
-      "summary": "The Court held that a de novo trial cannot be ordered merely on technical grounds, particularly when the trial had substantially progressed and no real miscarriage of justice is shown. The post Absence of signature on charge curable irregularity, de novo trial not justified unless failure of justice shown: Supreme Court appeared first on SCC Times.",
-      "url": "https://www.scconline.com/blog/post/2026/03/28/sc-defect-in-charge-curable-irregularity-de-novo-trial-not-valid/",
-      "source": "SCC Online Blog",
-      "category": "Judgements",
-      "published": "Sat, 28 Mar 2026 08:30:18 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=28, tm_hour=8, tm_min=30, tm_sec=18, tm_wday=5, tm_yday=87, tm_isdst=0)"
-    },
-    {
-      "title": "Karnataka HC: ‘Happily Ever After’ No Excuse to Validate Child Marriage; Childhood Cannot be Surrendered",
-      "summary": "“The law protects childhood, so that it may blossom into informed adulthood. This Court will not permit this protection to be diminished.” The post Karnataka HC: ‘Happily Ever After’ No Excuse to Validate Child Marriage; Childhood Cannot be Surrendered appeared first on SCC Times.",
-      "url": "https://www.scconline.com/blog/post/2026/03/28/happily-ever-after-no-excuse-to-validate-child-marriage-karnataka-hc/",
-      "source": "SCC Online Blog",
-      "category": "Judgements",
-      "published": "Sat, 28 Mar 2026 07:30:45 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=28, tm_hour=7, tm_min=30, tm_sec=45, tm_wday=5, tm_yday=87, tm_isdst=0)"
-    },
-    {
-      "title": "Shardul Amarchand Mangaldas & Co. Advises on INR 60,000 Million IPO by Raajmarg Infra Investment Trust",
-      "summary": "Shardul Amarchand Mangaldas & Co. advised book running lead managers on the INR 60,000 million IPO of Raajmarg Infra Investment Trust, India’s largest road sector public offering. The post Shardul Amarchand Mangaldas & Co. Advises on INR 60,000 Million IPO by Raajmarg Infra Investment Trust appeared first on SCC Times.",
-      "url": "https://www.scconline.com/blog/post/2026/03/28/raajmarg-infra-invit-ipo-60000-million-sam/",
-      "source": "SCC Online Blog",
-      "category": "Judgements",
-      "published": "Sat, 28 Mar 2026 06:30:51 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=28, tm_hour=6, tm_min=30, tm_sec=51, tm_wday=5, tm_yday=87, tm_isdst=0)"
-    },
-    {
-      "title": "Petrol and Diesel Export Tax Benefits Revised: What Remains and What Has Been Withdrawn",
-      "summary": "Finance Ministry has notified the Central Excise (Amendment) Rules, 2026, revising export tax benefits for petrol, diesel and ATF, while preserving strategic exports by PSU oil companies to select neighbouring countries. The post Petrol and Diesel Export Tax Benefits Revised: What Remains and What Has Been Withdrawn appeared first on SCC Times.",
-      "url": "https://www.scconline.com/blog/post/2026/03/28/finance-ministry-notifies-central-excise-amendment-rules-2026/",
-      "source": "SCC Online Blog",
-      "category": "Judgements",
-      "published": "Sat, 28 Mar 2026 05:30:22 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=28, tm_hour=5, tm_min=30, tm_sec=22, tm_wday=5, tm_yday=87, tm_isdst=0)"
-    },
-    {
-      "title": "Opening of the Pandora’s Box: RBI’s New Directions on NBFCs and CICs",
-      "summary": "by Ashish Kumar* and Urja Joshi** The post Opening of the Pandora’s Box: RBI’s New Directions on NBFCs and CICs appeared first on SCC Times.",
-      "url": "https://www.scconline.com/blog/post/2026/03/28/rbi-nbfc-cic-directions-2025-classification-ambiguity/",
-      "source": "SCC Online Blog",
-      "category": "Judgements",
-      "published": "Sat, 28 Mar 2026 04:30:29 +0000",
-      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=28, tm_hour=4, tm_min=30, tm_sec=29, tm_wday=5, tm_yday=87, tm_isdst=0)"
+      "title": "Khaitan, C&M, Trilegal, Simpson Thacher act on Blackstone-backed EPL - Indovida Packaging merger",
+      "summary": "",
+      "url": "https://www.barandbench.com/dealstreet/khaitan-co-acts-on-blackstone-backed-epl-indovida-packaging-merger",
+      "source": "Bar and Bench",
+      "category": "General Legal",
+      "published": "Thu, 02 Apr 2026 09:39:11 +0530",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=2, tm_hour=4, tm_min=9, tm_sec=11, tm_wday=3, tm_yday=92, tm_isdst=0)"
     },
     {
       "title": "Fraud Prosecution under the Companies Act: Procedural Guardrails",
@@ -110,6 +29,33 @@
       "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=21, tm_hour=22, tm_min=34, tm_sec=27, tm_wday=5, tm_yday=80, tm_isdst=0)"
     },
     {
+      "title": "Tiger Global Case: Can the Supreme Court Ensure Predictability in Taxation?",
+      "summary": "[Samridhi Singh is a student at National Law University, Patna] On January 15, 2026, the Supreme Court of India pronounced its judgment in Authority for Advance Rulings (Income Tax) (“AAR”) v. Tiger Global International II Holdings (“Tiger Global”), creating a further knot in the rope of predictable taxation when it comes to double taxation avoidance treaties (“DTAA”). While […]",
+      "url": "https://indiacorplaw.in/2026/04/05/tiger-global-case-can-the-supreme-court-ensure-predictability-in-taxation/",
+      "source": "India Corporate Law",
+      "category": "Corporate",
+      "published": "Sat, 04 Apr 2026 22:30:42 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=4, tm_hour=22, tm_min=30, tm_sec=42, tm_wday=5, tm_yday=94, tm_isdst=0)"
+    },
+    {
+      "title": "Sovereignty Without Foreclosure: Arguing for a Reconciliatory Framework After SBI v. Union of India",
+      "summary": "[Soumya Dubey is a 3rd year B.A., LL.B. (Hons.) student at National Law University Odisha] Recently, the Supreme Court delivered its judgment in State Bank of India v. Union of India 2026 INSC 153 (13 February 2026) clarifying that spectrum licences allotted to telecom service providers (‘TSPs’) cannot be treated as ‘assets’ within insolvency proceedings. While the judgment […]",
+      "url": "https://indiacorplaw.in/2026/04/04/sovereignty-without-foreclosure-arguing-for-a-reconciliatory-framework-after-sbi-v-union-of-india/",
+      "source": "India Corporate Law",
+      "category": "Corporate",
+      "published": "Sat, 04 Apr 2026 02:31:27 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=4, tm_hour=2, tm_min=31, tm_sec=27, tm_wday=5, tm_yday=94, tm_isdst=0)"
+    },
+    {
+      "title": "The State of SEBI’s Settlement Mechanism",
+      "summary": "[Sambit Rath is a 5th year B.A. LL.B. (Hons.) student at Dr. Ram Manohar Lohiya National Law University, Lucknow] In recent years, the Securities and Exchange Board of India’s (“SEBI”) settlement mechanism has come under renewed scrutiny, with judicial observations on its legal implications and debates surrounding the mechanism’s transparency and proportionality. At its core, the settlement […]",
+      "url": "https://indiacorplaw.in/2026/03/30/the-state-of-sebis-settlement-mechanism/",
+      "source": "India Corporate Law",
+      "category": "Corporate",
+      "published": "Mon, 30 Mar 2026 04:15:50 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=3, tm_mday=30, tm_hour=4, tm_min=15, tm_sec=50, tm_wday=0, tm_yday=89, tm_isdst=0)"
+    },
+    {
       "title": "SCO Conducts Workshop at NALSAR University of Law",
       "summary": "The post SCO Conducts Workshop at NALSAR University of Law appeared first on Supreme Court Observer.",
       "url": "https://www.scobserver.in/sco-conducts-workshop-at-nalsar-university-of-law/",
@@ -117,6 +63,114 @@
       "category": "Supreme Court",
       "published": "Mon, 18 Apr 2022 09:40:23 +0000",
       "published_parsed": "time.struct_time(tm_year=2022, tm_mon=4, tm_mday=18, tm_hour=9, tm_min=40, tm_sec=23, tm_wday=0, tm_yday=108, tm_isdst=0)"
+    },
+    {
+      "title": "Fifth ICA international arbitration conference to be held at Delhi High Court on April 10–11",
+      "summary": "",
+      "url": "https://www.barandbench.com/Law-School/fifth-ica-international-arbitration-conference-to-be-held-at-delhi-high-court-on-april-1011",
+      "source": "Bar and Bench",
+      "category": "General Legal",
+      "published": "Mon, 06 Apr 2026 20:00:48 +0530",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=14, tm_min=30, tm_sec=48, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Sathankulam custodial deaths: Madurai court awards death penalty to 9 police officers",
+      "summary": "",
+      "url": "https://www.barandbench.com/news/litigation/sathankulam-custodial-deaths-madurai-court-awards-death-penalty-to-9-police-officers",
+      "source": "Bar and Bench",
+      "category": "General Legal",
+      "published": "Mon, 06 Apr 2026 19:23:01 +0530",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=13, tm_min=53, tm_sec=1, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "State can't get into people's pants: Listen to what trans/queer lawyers think of the Transgender Amendment Act",
+      "summary": "",
+      "url": "https://www.barandbench.com/columns/state-cant-get-into-peoples-pants-listen-to-what-transqueer-lawyers-think-of-the-transgender-amendment-act",
+      "source": "Bar and Bench",
+      "category": "General Legal",
+      "published": "Mon, 06 Apr 2026 19:17:51 +0530",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=13, tm_min=47, tm_sec=51, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Plea filed before Kerala High Court challenging Transgender Persons Amendment Act, 2026",
+      "summary": "",
+      "url": "https://www.barandbench.com/news/plea-filed-before-kerala-high-court-challenging-transgender-persons-amendment-act-2026",
+      "source": "Bar and Bench",
+      "category": "General Legal",
+      "published": "Mon, 06 Apr 2026 19:16:04 +0530",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=13, tm_min=46, tm_sec=4, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Rajasthan river pollution: Supreme Court orders creation of special courts to prosecute polluting industries",
+      "summary": "",
+      "url": "https://www.barandbench.com/news/rajasthan-river-pollution-supreme-court-orders-creation-of-special-courts-to-prosecute-polluting-industries",
+      "source": "Bar and Bench",
+      "category": "General Legal",
+      "published": "Mon, 06 Apr 2026 18:57:56 +0530",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=13, tm_min=27, tm_sec=56, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Global Legal Minds Set to Converge at 5th ICA International Conference on Arbitration in the Era of Globalization on April 10—11, 2026 | Register Now",
+      "summary": "The theme of the 2026 Conference is “Arbitration in the Era of Globalization: Legal Technology, Economic Development & Cross-Border Disputes.” The post Global Legal Minds Set to Converge at 5th ICA International Conference on Arbitration in the Era of Globalization on April 10—11, 2026 | Register Now appeared first on SCC Times.",
+      "url": "https://www.scconline.com/blog/post/2026/04/06/indian-council-of-arbitration-hosts-5th-ica-international-conference/",
+      "source": "SCC Online Blog",
+      "category": "Judgements",
+      "published": "Mon, 06 Apr 2026 13:00:28 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=13, tm_min=0, tm_sec=28, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Succession to office of Sajjadanashin governed by custom and valid nomination, not mere lineal inheritance: Supreme Court",
+      "summary": "“The Sajjadanashin is not merely an administrative manager of Wakf property but is primarily the spiritual head of the shrine, responsible for preserving the spiritual lineage (silsila), guiding disciples (murids), conducting religious ceremonies such as Urs and Sandal, and maintaining the spiritual traditions associated with the shrine.” The post Succession to office of Sajjadanashin governed by custom and valid nomination, not mere lineal inheritance: Supreme Court appeared first on SCC Times.",
+      "url": "https://www.scconline.com/blog/post/2026/04/06/sc-succession-to-office-of-sajjadanashin-custom-valid-nomination/",
+      "source": "SCC Online Blog",
+      "category": "Judgements",
+      "published": "Mon, 06 Apr 2026 12:30:25 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=12, tm_min=30, tm_sec=25, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Uttaranchal High Court stays proceedings against minor boy accused of kidnapping minor girl in consensual relationship case",
+      "summary": "The minor victim admitted in her statement that she was engaged in physical relations with the minor boy, which was consensual. The post Uttaranchal High Court stays proceedings against minor boy accused of kidnapping minor girl in consensual relationship case appeared first on SCC Times.",
+      "url": "https://www.scconline.com/blog/post/2026/04/06/uttaranchal-hc-on-consensual-relationship-case-involving-minors/",
+      "source": "SCC Online Blog",
+      "category": "Judgements",
+      "published": "Mon, 06 Apr 2026 11:30:00 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=11, tm_min=30, tm_sec=0, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Allahabad High Court directs IGP to investigate honey-trap gang operating through women to extort innocent people",
+      "summary": "“If offences like these are permitted to continue, it would become difficult to live in a decent world.” The post Allahabad High Court directs IGP to investigate honey-trap gang operating through women to extort innocent people appeared first on SCC Times.",
+      "url": "https://www.scconline.com/blog/post/2026/04/06/all-hc-directs-igp-to-thoroughly-investigate-honey-trap-gang-extort/",
+      "source": "SCC Online Blog",
+      "category": "Judgements",
+      "published": "Mon, 06 Apr 2026 10:30:24 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=10, tm_min=30, tm_sec=24, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "One Policy to Rule Them All: CCI’s (Mis)application of Discriminatory Conditions in the Intel Case",
+      "summary": "[Trushil Vyas is a 3rd year B.A. LL.B. (Hons.) student at the National Law School of India University, Bengaluru.] The Competition Commission of India (CCI), in an order dated 12 February 2026, imposed a penalty of INR 27.38 crore on Intel for violating multiple subsections of section 4 of the Competition Act, 2002. The case concerned Intel’s “India […]",
+      "url": "https://indiacorplaw.in/2026/04/06/one-policy-to-rule-them-all-ccis-misapplication-of-discriminatory-conditions-in-the-intel-case/",
+      "source": "India Corporate Law",
+      "category": "Corporate",
+      "published": "Mon, 06 Apr 2026 10:16:45 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=10, tm_min=16, tm_sec=45, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Top Legal Developments [30th March — 5th April 2026]: BCI’s withdrawal of Three-Year Moratorium; Mother’s Power to Sell Minor’s HUF Share & Other Key Verdicts & Policy Updates",
+      "summary": "A quick roundup to cover all the important legal developments and cases this week. The post Top Legal Developments [30th March — 5th April 2026]: BCI’s withdrawal of Three-Year Moratorium; Mother’s Power to Sell Minor’s HUF Share & Other Key Verdicts & Policy Updates appeared first on SCC Times.",
+      "url": "https://www.scconline.com/blog/post/2026/04/06/weekly-legal-developments-india-30th-march-5th-april-2026/",
+      "source": "SCC Online Blog",
+      "category": "Judgements",
+      "published": "Mon, 06 Apr 2026 09:30:21 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=9, tm_min=30, tm_sec=21, tm_wday=0, tm_yday=96, tm_isdst=0)"
+    },
+    {
+      "title": "Even Property Owner Can Be Guilty of Trespass: Kerala HC Explains Why",
+      "summary": "“Offences such as criminal trespass and house trespass are offences against possession and not against ownership. Therefore, even a true owner cannot, under the guise of ownership, unlawfully enter premises in the lawful possession of another with the intent to commit an offence.” The post Even Property Owner Can Be Guilty of Trespass: Kerala HC Explains Why appeared first on SCC Times.",
+      "url": "https://www.scconline.com/blog/post/2026/04/06/property-owner-guilty-of-trespass-ker-hc/",
+      "source": "SCC Online Blog",
+      "category": "Judgements",
+      "published": "Mon, 06 Apr 2026 08:30:05 +0000",
+      "published_parsed": "time.struct_time(tm_year=2026, tm_mon=4, tm_mday=6, tm_hour=8, tm_min=30, tm_sec=5, tm_wday=0, tm_yday=96, tm_isdst=0)"
     }
   ]
 }

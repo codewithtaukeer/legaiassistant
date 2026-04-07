@@ -1,36 +1,38 @@
 from fastapi import FastAPI, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor
+import uuid
 
 from rag.retriever import search_legal_sections
 from rag.generator import generate_answer
 from rag.translator import translate_to_english, translate_from_english
 from rag.language_detector import detect_language
-from rag.pdf_loader import load_pdf_text, load_pdf_with_pages
+from rag.pdf_loader import load_pdf_with_pages
 from rag.text_chunker import chunk_text
 from rag.pdf_vector_store import build_pdf_index, search_pdf, clear_pdf_index, list_uploaded_pdfs
 from rag.procedure_retriever import search_procedures, is_procedure_query
 from rag.case_retriever import search_case_laws
+from rag.news_fetcher import fetch_all_news, get_cached_news
 
 from backend.database import get_db
 from backend.auth import get_current_user
-from backend.routers import auth_router, chat_router, admin_router
+from backend.routers import auth_router, chat_router, admin_router, document_generator
 from backend.routers.chat_router import save_message
 
+# ── NEW: Argue Mode router ────────────────────────────────────────────────────
+from backend.routers.argue_router import router as argue_router
+
 from apscheduler.schedulers.background import BackgroundScheduler
-from rag.news_fetcher import fetch_all_news, get_cached_news
-
-
-import os
-import uuid
-
+  
 app = FastAPI(title="Legal AI Assistant")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5174", "http://localhost:5173", "*"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,17 +41,25 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_router.router)
+app.include_router(document_generator.router)
+
+# ── Register argue router ─────────────────────────────────────────────────────
+app.include_router(argue_router)
+
+os.makedirs("generated_documents", exist_ok=True)
+app.mount("/generated_documents", StaticFiles(directory="generated_documents"), name="generated_documents")
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(fetch_all_news, 'interval', hours=4, id='news_fetch')
+scheduler.add_job(fetch_all_news, "interval", hours=4, id="news_fetch")
 scheduler.start()
+
 
 @app.on_event("startup")
 def startup_event():
-    # Fetch news on startup if cache is empty
-    import os
+    os.makedirs("data", exist_ok=True)
     if not os.path.exists("data/legal_news_cache.json"):
         fetch_all_news()
+
 
 @app.get("/")
 def home():
@@ -61,10 +71,11 @@ def ask_question(
     question: str,
     session_id: str = None,
     mode: str = "auto",
+    chat_mode: str = "normal",
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
-    from backend.database import ChatSession
+    from backend.database import ChatSession, Message
 
     if session_id:
         session = db.query(ChatSession).filter(
@@ -80,15 +91,15 @@ def ask_question(
     is_procedure = is_procedure_query(english_question)
 
     with ThreadPoolExecutor() as executor:
-        future_pdf        = executor.submit(search_pdf, english_question)
-        future_sections   = executor.submit(search_legal_sections, english_question)
+        future_pdf = executor.submit(search_pdf, english_question)
+        future_sections = executor.submit(search_legal_sections, english_question)
         future_procedures = executor.submit(search_procedures, english_question, 5) if is_procedure else None
-        future_cases      = executor.submit(search_case_laws, english_question, 3) if not is_procedure else None
+        future_cases = executor.submit(search_case_laws, english_question, 3) if not is_procedure else None
 
         pdf_results = future_pdf.result()
-        sections    = future_sections.result()
-        procedures  = future_procedures.result() if future_procedures else []
-        case_laws   = future_cases.result() if future_cases else []
+        sections = future_sections.result()
+        procedures = future_procedures.result() if future_procedures else []
+        case_laws = future_cases.result() if future_cases else []
 
     pdf_results = [r for r in pdf_results if r.get("relevance_score", 0) > 0.35]
 
@@ -106,12 +117,13 @@ def ask_question(
 
     history = []
     if session_id:
-        from backend.database import Message
         messages = db.query(Message).filter(
             Message.session_id == session_id
         ).order_by(Message.created_at).all()
         for m in messages[-8:]:
-            history.append({"question": m.content, "answer": ""} if m.role == "user" else {"question": "", "answer": m.content})
+            history.append(
+                {"question": m.content, "answer": ""} if m.role == "user" else {"question": "", "answer": m.content}
+            )
 
     result = generate_answer(english_question, context, history, procedures, user_language, case_laws, mode=mode)
 
@@ -170,13 +182,14 @@ def ask_question(
         "relevant_laws": result["relevant_laws"],
         "summary": result["summary"],
         "citations": citations,
-        "related_questions": result.get("related_questions", [])
+        "related_questions": result.get("related_questions", []),
     }
+
 
 @app.get("/news")
 def get_news(current_user=Depends(get_current_user)):
-    data = get_cached_news()
-    return data
+    return get_cached_news()
+
 
 @app.post("/news/refresh")
 def refresh_news(current_user=Depends(get_current_user)):
@@ -185,6 +198,7 @@ def refresh_news(current_user=Depends(get_current_user)):
         "message": f"Fetched {len(articles)} articles",
         "last_updated": articles[0]["published"] if articles else None
     }
+
 
 class FeedbackRequest(BaseModel):
     message_id: str
@@ -195,10 +209,7 @@ feedback_store = {}
 
 
 @app.post("/feedback")
-def submit_feedback(
-    body: FeedbackRequest,
-    current_user=Depends(get_current_user)
-):
+def submit_feedback(body: FeedbackRequest, current_user=Depends(get_current_user)):
     feedback_store[body.message_id] = {
         "user_id": current_user.id,
         "feedback": body.feedback

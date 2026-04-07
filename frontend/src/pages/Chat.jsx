@@ -2,6 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import ReactMarkdown from 'react-markdown'
+import ArgueMode from './ArgueMode' // <-- import ArgueMode
+
+const DOCUMENT_TYPES = [
+  { id: 'fir', name: 'FIR', icon: '📋' },
+  { id: 'notice', name: 'Legal Notice', icon: '📬' },
+  { id: 'rental', name: 'Rental Agreement', icon: '🏠' },
+  { id: 'affidavit', name: 'Affidavit', icon: '✍️' },
+]
 
 export default function Chat() {
   const [sessions, setSessions] = useState([])
@@ -24,6 +32,15 @@ export default function Chat() {
   const [showNewsModal, setShowNewsModal] = useState(false)
   const [selectedArticle, setSelectedArticle] = useState(null)
   const [newsFilter, setNewsFilter] = useState('All')
+
+  const [chatMode, setChatMode] = useState('normal')
+  const [documentType, setDocumentType] = useState('')
+  const [documentDraft, setDocumentDraft] = useState({})
+  const [showDocPicker, setShowDocPicker] = useState(false)
+
+  // NEW: argue mode toggle
+  const [showArgueMode, setShowArgueMode] = useState(false)
+
   const messagesEndRef = useRef(null)
   const navigate = useNavigate()
   const username = localStorage.getItem('username')
@@ -51,11 +68,17 @@ export default function Chat() {
     try {
       const res = await api.post('/chat/session/new')
       await loadSessions(); setActiveSession(res.data.session_id); setMessages([]); setCitations([])
+      setChatMode('normal')
+      setDocumentType('')
+      setDocumentDraft({})
+      setShowDocPicker(false)
+      setShowArgueMode(false) // close argue mode on new chat
     } catch {}
   }
 
   const loadSession = async (sessionId) => {
     setActiveSession(sessionId); setCitations([])
+    setShowArgueMode(false) // close argue mode when loading session
     try {
       const res = await api.get(`/chat/session/${sessionId}/messages`)
       setMessages(res.data.messages.map(m => ({ role: m.role, content: m.content, citations: m.citations, relevant_laws: m.relevant_laws })))
@@ -69,43 +92,6 @@ export default function Chat() {
       if (activeSession === sessionId) { setActiveSession(null); setMessages([]) }
       loadSessions()
     } catch {}
-  }
-
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return
-    let sessionId = activeSession
-    if (!sessionId) {
-      try {
-        const res = await api.post('/chat/session/new')
-        sessionId = res.data.session_id; setActiveSession(sessionId); await loadSessions()
-      } catch { return }
-    }
-    const userMsg = { role: 'user', content: input }
-    setMessages(prev => [...prev, userMsg])
-    const currentInput = input; setInput(''); setLoading(true)
-    try {
-      const res = await api.get('/ask', { params: { question: currentInput, session_id: sessionId, mode: llmMode } })
-      setMessages(prev => [...prev, {
-        role: 'assistant', content: res.data.answer,
-        case_analysis: res.data.case_analysis || '',
-        citations: res.data.citations, relevant_laws: res.data.relevant_laws,
-        summary: res.data.summary, related_questions: res.data.related_questions || []
-      }])
-      if (res.data.citations?.length > 0) setCitations(res.data.citations)
-      loadSessions()
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
-    } finally { setLoading(false) }
-  }
-
-  const handleUpload = async () => {
-    if (!uploadFile) return; setUploading(true); setUploadMsg('')
-    try {
-      const formData = new FormData(); formData.append('file', uploadFile)
-      const res = await api.post('/upload_pdf', formData)
-      setUploadMsg(res.data.message); setUploadFile(null)
-    } catch { setUploadMsg('Upload failed. Please try again.') }
-    finally { setUploading(false) }
   }
 
   const startVoice = () => {
@@ -128,6 +114,103 @@ export default function Chat() {
   const logout = () => { localStorage.clear(); navigate('/landing') }
 
   const suggestions = ['What is punishment for murder?', 'What are fundamental rights?', 'What is Section 420 IPC?']
+
+  const switchToNormal = () => {
+    setChatMode('normal')
+    setDocumentType('')
+    setDocumentDraft({})
+    setShowDocPicker(false)
+  }
+
+  const handleDocTypePick = (docType) => {
+    setChatMode('document')
+    setDocumentType(docType)
+    setShowDocPicker(false)
+    setDocumentDraft({})
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `Document mode enabled. You selected **${docType.toUpperCase()}**. Start describing your issue and I will ask follow-up questions if needed.`
+    }])
+  }
+
+  const handleGenerateDocumentNow = async () => {
+    if (!documentType) return
+    if (!input.trim()) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Please type the facts first, then press Send or Generate.' }])
+      return
+    }
+    await sendDocumentMessage(input.trim(), true)
+  }
+
+  const sendDocumentMessage = async (userText, forceGenerate = false) => {
+    let sessionId = activeSession
+    if (!sessionId) {
+      try {
+        const res = await api.post('/chat/session/new')
+        sessionId = res.data.session_id; setActiveSession(sessionId); await loadSessions()
+      } catch { return }
+    }
+    setMessages(prev => [...prev, { role: 'user', content: userText }])
+    setInput('')
+    setLoading(true)
+    try {
+      const res = await api.post('/documents/chat', {
+        session_id: sessionId, document_type: documentType, message: userText,
+        draft: documentDraft, mode: llmMode, force_generate: forceGenerate,
+      })
+      if (res.data.draft) setDocumentDraft(res.data.draft)
+      const assistantMsg = {
+        role: 'assistant', content: res.data.answer, citations: res.data.citations || [],
+        relevant_laws: [], summary: '', related_questions: [], options: res.data.options || [],
+        download_url: res.data.download_url || '', document_generated: !!res.data.document_generated,
+        document_type: res.data.document_type || documentType, can_generate: !!res.data.can_generate,
+      }
+      setMessages(prev => [...prev, assistantMsg])
+      if (res.data.citations?.length > 0) setCitations(res.data.citations)
+      loadSessions()
+      if (res.data.document_generated && res.data.download_url) setShowDocPicker(false)
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
+    } finally { setLoading(false) }
+  }
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return
+    if (chatMode === 'document') return sendDocumentMessage(input, false)
+
+    let sessionId = activeSession
+    if (!sessionId) {
+      try {
+        const res = await api.post('/chat/session/new')
+        sessionId = res.data.session_id; setActiveSession(sessionId); await loadSessions()
+      } catch { return }
+    }
+    const userMsg = { role: 'user', content: input }
+    setMessages(prev => [...prev, userMsg])
+    const currentInput = input; setInput(''); setLoading(true)
+    try {
+      const res = await api.get('/ask', { params: { question: currentInput, session_id: sessionId, mode: llmMode, chat_mode: 'normal' } })
+      setMessages(prev => [...prev, {
+        role: 'assistant', content: res.data.answer, case_analysis: res.data.case_analysis || '',
+        citations: res.data.citations, relevant_laws: res.data.relevant_laws,
+        summary: res.data.summary, related_questions: res.data.related_questions || []
+      }])
+      if (res.data.citations?.length > 0) setCitations(res.data.citations)
+      loadSessions()
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
+    } finally { setLoading(false) }
+  }
+
+  const handleUpload = async () => {
+    if (!uploadFile) return; setUploading(true); setUploadMsg('')
+    try {
+      const formData = new FormData(); formData.append('file', uploadFile)
+      const res = await api.post('/upload_pdf', formData)
+      setUploadMsg(res.data.message); setUploadFile(null)
+    } catch { setUploadMsg('Upload failed. Please try again.') }
+    finally { setUploading(false) }
+  }
 
   return (
     <>
@@ -162,6 +245,7 @@ export default function Chat() {
         .sb-bottom{padding:12px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:8px}
         .sb-action-btn{width:100%;background:none;border:1px solid var(--border2);border-radius:8px;padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;text-align:left;display:flex;align-items:center;gap:8px}
         .sb-action-btn:hover{border-color:var(--gold-border);color:var(--gold);background:var(--gold-dim)}
+        .sb-action-btn.active{background:var(--gold-dim);border-color:rgba(201,168,76,0.35);color:var(--gold)}
         .sb-user{display:flex;align-items:center;justify-content:space-between;padding:8px 4px}
         .sb-username{font-size:13px;color:var(--text3);display:flex;align-items:center;gap:6px}
         .sb-logout{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color 0.2s;padding:4px 8px;border-radius:4px}
@@ -175,6 +259,12 @@ export default function Chat() {
         .upload-submit:hover:not(:disabled){background:var(--gold-light)}
         .upload-submit:disabled{opacity:0.5;cursor:not-allowed}
         .upload-msg{font-size:12px;color:var(--gold);margin-top:8px;text-align:center}
+        .doc-mode-box{background:var(--dark3);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;margin-top:8px}
+        .doc-mode-title{font-size:12px;color:var(--gold);margin-bottom:8px}
+        .doc-type-row{display:flex;flex-wrap:wrap;gap:6px}
+        .doc-pill{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
+        .doc-pill:hover{border-color:var(--gold-border);color:var(--gold)}
+        .doc-pill.active{background:var(--gold-dim);border-color:var(--gold-border);color:var(--gold)}
 
         /* MAIN */
         .chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--dark);position:relative}
@@ -224,6 +314,8 @@ export default function Chat() {
         .related-questions{display:flex;flex-direction:column;gap:6px;max-width:100%}
         .related-btn{background:var(--dark3);border:1px solid var(--border2);border-radius:8px;padding:9px 14px;font-size:13px;color:var(--text3);cursor:pointer;text-align:left;font-family:'DM Sans',sans-serif;transition:all 0.2s}
         .related-btn:hover{border-color:var(--gold-border);color:var(--text1);background:var(--gold-dim)}
+        .doc-options{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+        .doc-option-btn{background:var(--gold-dim);border:1px solid var(--gold-border);color:var(--gold);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer}
 
         /* TYPING */
         .typing{display:flex;gap:4px;align-items:center;padding:4px 0}
@@ -268,30 +360,18 @@ export default function Chat() {
         .cite-passage{font-size:12px;color:var(--text2);line-height:1.5}
         .cite-score{font-size:11px;color:var(--text3);margin-top:8px;display:flex;align-items:center;gap:4px}
         .cite-score-bar{height:3px;background:var(--gold-dim);border-radius:2px;flex:1}
-        .cite-score-fill{height:100%;background:var(--gold);border-radius:2px;transition:width 0.5s ease}
 
         /* NEWS MODAL */
-        .news-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn 0.2s ease}
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        .news-modal{background:rgba(15,15,15,0.95);backdrop-filter:blur(24px);border:1px solid var(--gold-border);border-radius:20px;width:100%;max-width:1100px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,0.6);animation:slideUp 0.3s ease}
-        @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        .news-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}
+        .news-modal{background:rgba(15,15,15,0.97);border:1px solid var(--gold-border);border-radius:20px;width:100%;max-width:1100px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column}
         .news-modal-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:24px 28px 16px;border-bottom:1px solid var(--border2)}
-        .news-modal-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--text1)}
+        .news-modal-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--text1);margin:0}
         .news-modal-sub{font-size:12px;color:var(--text3);margin-top:4px}
         .news-modal-actions{display:flex;align-items:center;gap:10px}
-        .news-refresh-btn{background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--gold);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
-        .news-refresh-btn:hover:not(:disabled){background:rgba(201,168,76,0.2)}
-        .news-close-btn{background:var(--dark4);border:1px solid var(--border2);border-radius:8px;width:36px;height:36px;font-size:16px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
-        .news-close-btn:hover{background:rgba(255,80,80,0.1);border-color:rgba(255,80,80,0.3);color:var(--danger)}
-        .news-cat-bar{display:flex;gap:8px;padding:14px 28px;border-bottom:1px solid var(--border2);flex-wrap:wrap}
-        .news-cat-btn{background:var(--dark4);border:1px solid var(--border2);border-radius:20px;padding:6px 16px;font-size:13px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
-        .news-cat-btn:hover{border-color:var(--gold-border);color:var(--gold)}
-        .news-cat-btn.active{background:var(--gold);border-color:var(--gold);color:#080808;font-weight:500}
+        .news-refresh-btn,.news-close-btn{background:var(--dark4);border:1px solid var(--border2);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif}
         .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:20px 28px;overflow-y:auto;flex:1}
-        .news-grid::-webkit-scrollbar{width:4px}
-        .news-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-        .news-card{background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:14px;padding:18px;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;gap:8px}
-        .news-card:hover{background:rgba(201,168,76,0.05);border-color:var(--gold-border);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+        .news-card{background:rgba(255,255,255,0.03);border:1px solid var(--border2);border-radius:14px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all 0.2s}
+        .news-card:hover{border-color:var(--gold-border);transform:translateY(-2px)}
         .news-card-top{display:flex;align-items:center;justify-content:space-between}
         .news-card-source{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.8px}
         .news-card-cat{font-size:10px;background:var(--dark4);border:1px solid var(--border2);border-radius:10px;padding:2px 8px;color:var(--text3)}
@@ -300,20 +380,21 @@ export default function Chat() {
         .news-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
         .news-card-date{font-size:11px;color:var(--text3)}
         .news-read-more{font-size:12px;color:var(--gold);font-weight:500}
-        .news-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:16px;font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic}
+        .news-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:16px}
         .news-spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .article-modal{background:rgba(15,15,15,0.97);backdrop-filter:blur(24px);border:1px solid var(--gold-border);border-radius:20px;width:100%;max-width:680px;max-height:85vh;overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:16px;box-shadow:0 32px 80px rgba(0,0,0,0.7);animation:slideUp 0.25s ease}
-        .article-modal::-webkit-scrollbar{width:4px}
-        .article-modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+        .news-cat-bar{display:flex;gap:8px;padding:12px 28px;border-bottom:1px solid var(--border2);overflow-x:auto}
+        .news-cat-btn{background:none;border:1px solid var(--border2);border-radius:999px;padding:5px 14px;font-size:12px;color:var(--text3);cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all 0.2s}
+        .news-cat-btn:hover,.news-cat-btn.active{border-color:var(--gold-border);color:var(--gold);background:var(--gold-dim)}
+        .article-modal{background:rgba(15,15,15,0.97);border:1px solid var(--gold-border);border-radius:20px;width:100%;max-width:680px;max-height:85vh;overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:16px}
         .article-modal-hdr{display:flex;align-items:center;justify-content:space-between}
         .article-modal-meta{display:flex;align-items:center;gap:8px}
-        .article-modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--text1);line-height:1.4}
-        .article-modal-date{font-size:12px;color:var(--text3)}
+        .article-modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--text1);line-height:1.4;margin:0}
+        .article-modal-date{font-size:12px;color:var(--text3);margin:0}
         .article-divider{height:1px;background:var(--border2)}
         .article-body{font-size:15px;color:var(--text2);line-height:1.75}
-        .article-read-full{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:#080808;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;transition:all 0.2s;align-self:flex-start;margin-top:8px}
-        .article-read-full:hover{background:var(--gold-light);transform:translateY(-1px)}
+        .article-read-full{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:#080808;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:500;transition:all 0.2s}
+        .article-read-full:hover{background:var(--gold-light)}
       `}</style>
 
       <div className="chat-layout">
@@ -328,7 +409,7 @@ export default function Chat() {
             {sessions.length === 0 && <p className="sb-no-sessions">No conversations yet</p>}
             {sessions.map(s => (
               <div key={s.session_id}
-                className={`sb-session ${activeSession === s.session_id ? 'active' : ''}`}
+                className={`sb-session ${activeSession === s.session_id && !showArgueMode ? 'active' : ''}`}
                 onClick={() => loadSession(s.session_id)}>
                 <span className="sb-session-title">{s.title}</span>
                 <button className="sb-del-btn" onClick={(e) => deleteSession(e, s.session_id)}>🗑</button>
@@ -348,9 +429,39 @@ export default function Chat() {
                 {uploadMsg && <p className="upload-msg">{uploadMsg}</p>}
               </div>
             )}
+
+            <button className="sb-action-btn" onClick={() => setShowDocPicker(v => !v)}>
+              📝 Document Mode
+            </button>
+            {showDocPicker && (
+              <div className="doc-mode-box">
+                <div className="doc-mode-title">Choose document type</div>
+                <div className="doc-type-row">
+                  {DOCUMENT_TYPES.map(d => (
+                    <button key={d.id} className={`doc-pill ${documentType === d.id ? 'active' : ''}`}
+                      onClick={() => handleDocTypePick(d.id)}>
+                      {d.icon} {d.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── ARGUE MODE BUTTON ── */}
+            <button
+              className={`sb-action-btn ${showArgueMode ? 'active' : ''}`}
+              onClick={() => {
+                setShowArgueMode(v => !v)
+                setShowDocPicker(false)
+              }}
+            >
+              ⚖️ Argue Both Sides
+            </button>
+
             <button className="sb-action-btn" onClick={() => { setShowNewsModal(true); if (news.length === 0) loadNews() }}>
               📰 Legal News & Judgements
             </button>
+
             {username === 'admin' && (
               <button className="sb-action-btn" onClick={() => navigate('/admin')}>🛡️ Admin Panel</button>
             )}
@@ -361,100 +472,129 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Main */}
+        {/* Main Area */}
         <div className="chat-main">
           <div className="chat-main-bg" />
 
-          {messages.length === 0 ? (
-            <div className="chat-welcome">
-              <div className="welcome-icon">⚖️</div>
-              <h2 className="welcome-title">Legal AI Assistant</h2>
-              <p className="welcome-sub">Ask any question about Indian law</p>
-              <div className="welcome-suggestions">
-                {suggestions.map(s => (
-                  <button key={s} className="suggestion-btn" onClick={() => setInput(s)}>{s}</button>
-                ))}
-              </div>
-            </div>
+          {/* ── ARGUE MODE PANEL (replaces chat area) ── */}
+          {showArgueMode ? (
+            <ArgueMode onClose={() => setShowArgueMode(false)} />
           ) : (
-            <div className="chat-messages">
-              {messages.map((msg, i) => (
-                <div key={i} className={`msg-row ${msg.role}`}>
-                  <div className="msg-avatar">{msg.role === 'user' ? '👤' : '⚖️'}</div>
-                  <div className="msg-content">
-                    <div className="msg-bubble">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      {msg.role === 'assistant' && (
-                        <div className="msg-actions" style={{marginTop: 10}}>
-                          <button className={`msg-fb-btn ${msg.feedback === 'up' ? 'active' : ''}`}
-                            onClick={() => handleFeedback(i, 'up')}>👍</button>
-                          <button className={`msg-fb-btn ${msg.feedback === 'down' ? 'active' : ''}`}
-                            onClick={() => handleFeedback(i, 'down')}>👎</button>
-                          {msg.citations?.length > 0 && (
-                            <button className="msg-cite-btn"
-                              onClick={() => { setCitations(msg.citations); setShowCitations(true) }}>
-                              📚 {msg.citations.length} source{msg.citations.length > 1 ? 's' : ''}
-                            </button>
+            <>
+              {messages.length === 0 ? (
+                <div className="chat-welcome">
+                  <div className="welcome-icon">⚖️</div>
+                  <h2 className="welcome-title">Legal AI Assistant</h2>
+                  <p className="welcome-sub">
+                    {chatMode === 'document' && documentType
+                      ? `Document mode: ${documentType.toUpperCase()}`
+                      : 'Ask any question about Indian law'}
+                  </p>
+                  <div className="welcome-suggestions">
+                    {suggestions.map(s => (
+                      <button key={s} className="suggestion-btn" onClick={() => setInput(s)}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="chat-messages">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`msg-row ${msg.role}`}>
+                      <div className="msg-avatar">{msg.role === 'user' ? '👤' : '⚖️'}</div>
+                      <div className="msg-content">
+                        <div className="msg-bubble">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          {msg.document_generated && msg.download_url && (
+                            <div className="doc-options">
+                              <a className="doc-option-btn"
+                                href={`http://localhost:8000${msg.download_url}`}
+                                target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                                📄 Open PDF
+                              </a>
+                              <a className="doc-option-btn"
+                                href={`http://localhost:8000${msg.download_url}`}
+                                download rel="noreferrer" style={{ textDecoration: 'none' }}>
+                                ⬇ Download
+                              </a>
+                            </div>
+                          )}
+                          {msg.role === 'assistant' && (
+                            <div className="msg-actions" style={{ marginTop: 10 }}>
+                              <button className={`msg-fb-btn ${msg.feedback === 'up' ? 'active' : ''}`}
+                                onClick={() => handleFeedback(i, 'up')}>👍</button>
+                              <button className={`msg-fb-btn ${msg.feedback === 'down' ? 'active' : ''}`}
+                                onClick={() => handleFeedback(i, 'down')}>👎</button>
+                              {msg.citations?.length > 0 && (
+                                <button className="msg-cite-btn"
+                                  onClick={() => { setCitations(msg.citations); setShowCitations(true) }}>
+                                  📚 {msg.citations.length} source{msg.citations.length > 1 ? 's' : ''}
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
+                        {msg.role === 'assistant' && msg.case_analysis && (
+                          <div className="case-analysis">
+                            <div className="case-analysis-hdr">📋 Supporting Case Laws</div>
+                            <ReactMarkdown>{msg.case_analysis}</ReactMarkdown>
+                          </div>
+                        )}
+                        {msg.role === 'assistant' && msg.related_questions?.length > 0 && (
+                          <div className="related-questions">
+                            {msg.related_questions.map((q, qi) => (
+                              <button key={qi} className="related-btn" onClick={() => setInput(q)}>💬 {q}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    {msg.role === 'assistant' && msg.case_analysis && (
-                      <div className="case-analysis">
-                        <div className="case-analysis-hdr">📋 Supporting Case Laws</div>
-                        <ReactMarkdown>{msg.case_analysis}</ReactMarkdown>
+                  ))}
+                  {loading && (
+                    <div className="msg-row assistant">
+                      <div className="msg-avatar">⚖️</div>
+                      <div className="msg-bubble">
+                        <div className="typing"><span /><span /><span /></div>
                       </div>
-                    )}
-                    {msg.role === 'assistant' && msg.related_questions?.length > 0 && (
-                      <div className="related-questions">
-                        {msg.related_questions.map((q, qi) => (
-                          <button key={qi} className="related-btn" onClick={() => setInput(q)}>💬 {q}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="msg-row assistant">
-                  <div className="msg-avatar">⚖️</div>
-                  <div className="msg-bubble">
-                    <div className="typing"><span/><span/><span/></div>
-                  </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
 
-          <div className="chat-input-area">
-            <div className="chat-input-box">
-              <textarea className="chat-textarea" placeholder="Ask a legal question..."
-                value={input} rows={1}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} />
-              <button className="input-icon-btn" onClick={cycleLlmMode} title={`Mode: ${modeTitle}`}>{modeIcon}</button>
-              <button className={`input-icon-btn ${listening ? 'mic-active' : ''}`}
-                onClick={startVoice} disabled={loading} title="Voice input">
-                {listening ? '🔴' : '🎤'}
-              </button>
-              <button className="input-send-btn" onClick={sendMessage}
-                disabled={loading || !input.trim()} title="Send">
-                {loading ? '⏳' : '➤'}
-              </button>
-            </div>
-            <div className="input-meta">
-              <div className="input-mode-badge">
-                <div className="input-mode-dot" />
-                {modeTitle}
+              <div className="chat-input-area">
+                <div className="chat-input-box">
+                  <textarea className="chat-textarea"
+                    placeholder={chatMode === 'document' ? 'Describe the facts for the document...' : 'Ask a legal question...'}
+                    value={input} rows={1}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} />
+                  <button className="input-icon-btn" onClick={cycleLlmMode} title={`Mode: ${modeTitle}`}>{modeIcon}</button>
+                  <button className={`input-icon-btn ${listening ? 'mic-active' : ''}`}
+                    onClick={startVoice} disabled={loading} title="Voice input">
+                    {listening ? '🔴' : '🎤'}
+                  </button>
+                  {chatMode === 'document' && documentType && (
+                    <button className="input-icon-btn" onClick={handleGenerateDocumentNow} title="Generate document">📝</button>
+                  )}
+                  <button className="input-send-btn" onClick={sendMessage}
+                    disabled={loading || !input.trim()} title="Send">
+                    {loading ? '⏳' : '➤'}
+                  </button>
+                </div>
+                <div className="input-meta">
+                  <div className="input-mode-badge">
+                    <div className="input-mode-dot" />
+                    {chatMode === 'document' && documentType ? `Document mode • ${documentType.toUpperCase()}` : modeTitle}
+                  </div>
+                  <p className="input-disclaimer">Legal AI may make mistakes. Verify important information.</p>
+                </div>
               </div>
-              <p className="input-disclaimer">Legal AI may make mistakes. Verify important information.</p>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Citations Panel */}
-        {showCitations && citations.length > 0 && (
+        {showCitations && citations.length > 0 && !showArgueMode && (
           <div className="cite-panel">
             <div className="cite-hdr">
               <h3>📚 Sources</h3>
@@ -472,7 +612,7 @@ export default function Chat() {
                   <div className="cite-passage">{c.passage}</div>
                   <div className="cite-score">
                     <div className="cite-score-bar">
-                      <div className="cite-score-fill" style={{width: `${(c.relevance_score * 100).toFixed(0)}%`}} />
+                      <div style={{ width: `${(c.relevance_score * 100).toFixed(0)}%`, height: '100%', background: 'var(--gold)', borderRadius: 2 }} />
                     </div>
                     {(c.relevance_score * 100).toFixed(0)}%
                   </div>
@@ -499,7 +639,7 @@ export default function Chat() {
                 </div>
               </div>
               <div className="news-cat-bar">
-                {['All','Supreme Court','General Legal','Corporate','Judgements'].map(cat => (
+                {['All', 'Supreme Court', 'General Legal', 'Corporate', 'Judgements'].map(cat => (
                   <button key={cat} className={`news-cat-btn ${newsFilter === cat ? 'active' : ''}`}
                     onClick={() => setNewsFilter(cat)}>{cat}</button>
                 ))}
@@ -521,7 +661,7 @@ export default function Chat() {
                       <p className="news-card-summary">{article.summary?.slice(0, 180)}...</p>
                       <div className="news-card-footer">
                         <span className="news-card-date">
-                          {article.published ? new Date(article.published).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : ''}
+                          {article.published ? new Date(article.published).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
                         </span>
                         <span className="news-read-more">Read more →</span>
                       </div>
