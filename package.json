@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "feedparser": "^2.6.0"
+  }
+}

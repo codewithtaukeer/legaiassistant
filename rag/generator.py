@@ -48,7 +48,7 @@ def call_llm(prompt: str, mode: str = "auto") -> str:
         try:
             client = Groq(api_key=os.getenv("GROQ_API_KEY"))
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-120b",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=2048,
                 temperature=0.3
